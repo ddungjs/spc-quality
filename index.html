@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPC 품질관리 시스템</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{--bg:#0b0f1a;--bg2:#111827;--bg3:#1a2235;--card:#162032;--border:#1e3a5f;--accent:#00c6ff;--accent2:#0072ff;--green:#00e676;--red:#ff4444;--yellow:#ffd600;--text:#e0eaff;--text2:#7a9cc0;--text3:#4a6a8a;--font:'Noto Sans KR',sans-serif;--mono:'JetBrains Mono',monospace;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+/* LOGIN */
+#login-screen{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:40px;width:380px;text-align:center;}
+.login-logo{font-size:32px;margin-bottom:8px;}
+.login-title{font-size:20px;font-weight:700;color:var(--accent);letter-spacing:1px;margin-bottom:4px;}
+.login-sub{font-size:12px;color:var(--text3);margin-bottom:32px;}
+.login-field{margin-bottom:14px;text-align:left;}
+.login-label{font-size:11px;color:var(--text3);font-weight:600;margin-bottom:5px;display:block;}
+.login-input{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:border .18s;}
+.login-input:focus{border-color:var(--accent);}
+.login-btn{width:100%;padding:11px;background:linear-gradient(90deg,var(--accent2),var(--accent));border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;cursor:pointer;margin-top:8px;font-family:var(--font);transition:opacity .18s;}
+.login-btn:hover{opacity:.85;}
+.login-err{color:var(--red);font-size:12px;margin-top:10px;min-height:18px;}
+/* LAYOUT */
+#app{display:none;flex:1;overflow:hidden;}
+#sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+#main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+/* SIDEBAR */
+.logo{padding:18px 18px 14px;border-bottom:1px solid var(--border);}
+.logo-title{font-size:14px;font-weight:700;color:var(--accent);letter-spacing:1px;}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:2px;}
+.nav-section{padding:12px 10px 4px;font-size:9px;font-weight:700;color:var(--text3);letter-spacing:1.5px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;font-size:13px;color:var(--text2);cursor:pointer;border-left:3px solid transparent;transition:all .15s;user-select:none;}
+.nav-item:hover{background:var(--bg3);color:var(--text);}
+.nav-item.active{background:rgba(0,198,255,.07);color:var(--accent);border-left-color:var(--accent);font-weight:600;}
+.nav-icon{font-size:14px;width:18px;text-align:center;}
+.sidebar-bottom{margin-top:auto;padding:14px 18px;border-top:1px solid var(--border);}
+.user-chip{display:flex;align-items:center;gap:8px;}
+.avatar{width:30px;height:30px;background:linear-gradient(135deg,var(--accent2),var(--accent));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;}
+.user-name{font-size:12px;color:var(--text);font-weight:600;}
+.user-role{font-size:10px;color:var(--text3);}
+.logout-btn{background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;margin-top:6px;padding:0;font-family:var(--font);}
+.logout-btn:hover{color:var(--red);}
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;}
+.topbar-right{display:flex;gap:10px;align-items:center;}
+/* CONTENT */
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+.content::-webkit-scrollbar{width:5px;}
+.content::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+/* CARDS */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;}
+.card-title{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.8px;text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.card-title::before{content:'';display:inline-block;width:3px;height:13px;background:var(--accent);border-radius:2px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+/* STAT */
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;top:0;right:0;width:55px;height:55px;border-radius:0 10px 0 55px;opacity:.08;}
+.stat-card.blue::after{background:var(--accent);}
+.stat-card.green::after{background:var(--green);}
+.stat-card.red::after{background:var(--red);}
+.stat-card.yellow::after{background:var(--yellow);}
+.stat-label{font-size:11px;color:var(--text3);margin-bottom:5px;}
+.stat-value{font-size:26px;font-weight:700;font-family:var(--mono);}
+.stat-sub{font-size:11px;color:var(--text3);margin-top:3px;}
+.stat-card.blue .stat-value{color:var(--accent);}
+.stat-card.green .stat-value{color:var(--green);}
+.stat-card.red .stat-value{color:var(--red);}
+.stat-card.yellow .stat-value{color:var(--yellow);}
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{background:var(--bg3);color:var(--text3);font-size:11px;font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:7px 10px;border-bottom:1px solid rgba(30,58,95,.4);color:var(--text2);}
+tr:hover td{background:rgba(0,198,255,.02);}
+.pass{color:var(--green);font-weight:600;}
+.fail{color:var(--red);font-weight:600;}
+.warn{color:var(--yellow);font-weight:600;}
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;}
+.form-group{display:flex;flex-direction:column;gap:4px;}
+.form-label{font-size:11px;color:var(--text3);font-weight:600;}
+.form-input{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text);font-size:13px;font-family:var(--font);outline:none;transition:border .15s;}
+.form-input:focus{border-color:var(--accent);}
+.form-input option{background:var(--bg3);}
+/* BTN */
+.btn{padding:7px 16px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--font);transition:all .15s;}
+.btn-primary{background:linear-gradient(90deg,var(--accent2),var(--accent));color:#fff;}
+.btn-primary:hover{opacity:.85;}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(255,68,68,.12);border:1px solid rgba(255,68,68,.3);color:var(--red);}
+.btn-sm{padding:3px 9px;font-size:11px;}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;}
+.badge-green{background:rgba(0,230,118,.12);color:var(--green);}
+.badge-red{background:rgba(255,68,68,.12);color:var(--red);}
+.badge-yellow{background:rgba(255,214,0,.12);color:var(--yellow);}
+.badge-blue{background:rgba(0,198,255,.12);color:var(--accent);}
+.badge-gray{background:rgba(122,156,192,.1);color:var(--text3);}
+/* TABS */
+.tabs{display:flex;gap:4px;margin-bottom:16px;}
+.tab{padding:6px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text3);border:1px solid transparent;transition:all .15s;}
+.tab.active{background:rgba(0,198,255,.1);border-color:rgba(0,198,255,.3);color:var(--accent);}
+/* DOT */
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:5px;}
+.dot-g{background:var(--green);box-shadow:0 0 5px var(--green);}
+.dot-r{background:var(--red);box-shadow:0 0 5px var(--red);}
+.dot-y{background:var(--yellow);box-shadow:0 0 5px var(--yellow);}
+/* CHART */
+.chart-wrap{position:relative;height:200px;}
+.chart-tall{height:250px;}
+/* CPK */
+.cpk-item{background:var(--bg3);border-radius:8px;padding:11px;margin-bottom:8px;}
+.cpk-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.cpk-name{font-size:12px;font-weight:600;}
+.cpk-val{font-family:var(--mono);font-size:15px;font-weight:700;}
+.cpk-bar-bg{height:7px;background:var(--bg2);border-radius:4px;overflow:hidden;}
+.cpk-bar{height:100%;border-radius:4px;transition:width .8s ease;}
+/* PAGE */
+.page{display:none;}
+.page.active{display:block;}
+/* TOGGLE */
+.toggle{width:38px;height:20px;background:var(--bg3);border-radius:10px;position:relative;cursor:pointer;border:1px solid var(--border);transition:background .2s;flex-shrink:0;}
+.toggle.on{background:var(--accent2);border-color:var(--accent);}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;transition:left .2s;}
+.toggle.on::after{left:20px;}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;display:none;align-items:center;justify-content:center;}
+.modal-bg.show{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:26px;width:520px;max-height:85vh;overflow-y:auto;}
+.modal-title{font-size:15px;font-weight:700;margin-bottom:18px;color:var(--accent);}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+/* LOCK */
+.lock-msg{display:flex;flex-direction:column;align-items:center;justify-content:center;height:60vh;color:var(--text3);}
+.lock-icon{font-size:48px;margin-bottom:12px;}
+/* INLINE INPUT */
+.td-input{background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:3px 6px;color:var(--text);font-size:12px;font-family:var(--font);outline:none;width:85px;}
+.td-input:focus{border-color:var(--accent);}
+.td-input.wide{width:110px;}
+/* SETTINGS ROW */
+.settings-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(30,58,95,.5);}
+.settings-label{font-size:13px;}
+.settings-sub{font-size:11px;color:var(--text3);margin-top:2px;}
+#clock{font-size:11px;color:var(--text3);font-family:var(--mono);}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">⬡</div>
+    <div class="login-title">SPC 품질관리 시스템</div>
+    <div class="login-sub">Statistical Process Control v2.1</div>
+    <div class="login-field">
+      <label class="login-label">아이디</label>
+      <input class="login-input" id="lid" type="text" placeholder="아이디" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label class="login-label">비밀번호</label>
+      <input class="login-input" id="lpw" type="password" placeholder="비밀번호" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">로그인</button>
+    <div class="login-err" id="lerr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none;flex:1;overflow:hidden;">
+  <div id="sidebar">
+    <div class="logo">
+      <div class="logo-title">⬡ SPC SYSTEM</div>
+      <div class="logo-sub">통계적 공정관리 v2.1</div>
+    </div>
+    <div class="nav-section">메인</div>
+    <div class="nav-item active" onclick="nav('dashboard',this)"><span class="nav-icon">▦</span>대시보드</div>
+    <div class="nav-section">품질 입력</div>
+    <div class="nav-item" onclick="nav('iqc',this)"><span class="nav-icon">📥</span>IQC 입력</div>
+    <div class="nav-item" onclick="nav('pqc',this)"><span class="nav-icon">⚙️</span>PQC 입력</div>
+    <div class="nav-item" onclick="nav('oqc',this)"><span class="nav-icon">📤</span>OQC 입력</div>
+    <div class="nav-section">분석</div>
+    <div class="nav-item" onclick="nav('trend',this)"><span class="nav-icon">📈</span>Trend 확인</div>
+    <div class="nav-item" onclick="nav('cpk',this)"><span class="nav-icon">📊</span>제품별 Cpk</div>
+    <div class="nav-section">관리</div>
+    <div class="nav-item" onclick="nav('settings',this)"><span class="nav-icon">⚙</span>설정</div>
+    <div class="sidebar-bottom">
+      <div class="user-chip">
+        <div class="avatar" id="uavatar">?</div>
+        <div><div class="user-name" id="uname">-</div><div class="user-role" id="urole">-</div></div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">🚪 로그아웃</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="topbar">
+      <div class="topbar-title" id="ptitle">📊 대시보드</div>
+      <div class="topbar-right">
+        <span class="badge badge-green">● 시스템 정상</span>
+        <span id="clock"></span>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="grid4" style="margin-bottom:16px">
+          <div class="stat-card blue"><div class="stat-label">오늘 의뢰 시료</div><div class="stat-value" id="s-total">0</div><div class="stat-sub">금일 등록 건수</div></div>
+          <div class="stat-card green"><div class="stat-label">합격</div><div class="stat-value" id="s-pass">0</div><div class="stat-sub" id="s-rate">합격률 -</div></div>
+          <div class="stat-card red"><div class="stat-label">불합격</div><div class="stat-value" id="s-fail">0</div><div class="stat-sub">즉시 확인 필요</div></div>
+          <div class="stat-card yellow"><div class="stat-label">관리 제품 수</div><div class="stat-value">49</div><div class="stat-sub">등록된 제품</div></div>
+        </div>
+        <div class="grid2" style="margin-bottom:16px">
+          <div class="card"><div class="card-title">검사 유형별 분포</div><div class="chart-wrap"><canvas id="ch-type"></canvas></div></div>
+          <div class="card"><div class="card-title">최근 7일 의뢰 현황</div><div class="chart-wrap"><canvas id="ch-week"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title">최근 의뢰 시료 현황</div>
+          <div style="overflow-x:auto">
+          <table><thead><tr><th>의뢰번호</th><th>제품명</th><th>LOT No.</th><th>유형</th><th>의뢰일</th><th>분석자</th><th>판정</th></tr></thead>
+          <tbody id="db-table"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- IQC -->
+      <div class="page" id="page-iqc">
+        <div id="iqc-lock" class="lock-msg" style="display:none"><div class="lock-icon">🔒</div><div>IQC 입력 권한이 없습니다</div></div>
+        <div id="iqc-wrap">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab(this,'iqc','direct')">직접 입력</div>
+            <div class="tab" onclick="switchTab(this,'iqc','history')">입력 이력</div>
+          </div>
+          <div id="iqc-direct">
+            <div class="card">
+              <div class="card-title">기본 정보</div>
+              <div class="form-grid">
+                <div class="form-group"><label class="form-label">제품명</label>
+                  <select class="form-input" id="iqc-prod" onchange="loadSpec('iqc')"></select></div>
+                <div class="form-group"><label class="form-label">LOT No.</label><input class="form-input" id="iqc-lot" placeholder="LOT 번호 입력"></div>
+                <div class="form-group"><label class="form-label">의뢰일</label><input class="form-input" type="date" id="iqc-req"></div>
+                <div class="form-group"><label class="form-label">검사일</label><input class="form-input" type="date" id="iqc-date"></div>
+                <div class="form-group"><label class="form-label">공급업체명</label><input class="form-input" id="iqc-vendor" placeholder="공급업체 입력"></div>
+                <div class="form-group"><label class="form-label">분석자명</label><input class="form-input" id="iqc-analyst" placeholder="분석자 입력"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">시험 항목 입력</div>
+              <div style="overflow-x:auto">
+                <table><thead><tr><th>시험항목</th><th>단위</th><th>규격 (Spec)</th><th>측정값 1</th><th>측정값 2</th><th>측정값 3</th><th>평균</th><th>판정</th></tr></thead>
+                <tbody id="iqc-spec"></tbody></table>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <button class="btn btn-primary" onclick="saveEntry('IQC')">💾 저장</button>
+                <button class="btn btn-ghost" onclick="resetForm('iqc')">초기화</button>
+              </div>
+            </div>
+          </div>
+          <div id="iqc-history" style="display:none">
+            <div class="card">
+              <div class="card-title">IQC 입력 이력</div>
+              <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+                <div class="form-group"><label class="form-label">제품</label>
+                  <select class="form-input" id="iqc-hprod" style="width:170px"><option value="">전체</option></select></div>
+                <div class="form-group"><label class="form-label">시작일</label>
+                  <input class="form-input" type="date" id="iqc-hfrom" style="width:140px"></div>
+                <div class="form-group"><label class="form-label">종료일</label>
+                  <input class="form-input" type="date" id="iqc-hto" style="width:140px"></div>
+                <button class="btn btn-primary" onclick="loadHist('IQC')">조회</button>
+              </div>
+              <div style="overflow-x:auto">
+              <table><thead><tr><th>의뢰번호</th><th>제품명</th><th>LOT</th><th>의뢰일</th><th>검사일</th><th>공급업체</th><th>분석자</th><th>판정</th><th>상세</th></tr></thead>
+              <tbody id="iqc-htable"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PQC -->
+      <div class="page" id="page-pqc">
+        <div id="pqc-lock" class="lock-msg" style="display:none"><div class="lock-icon">🔒</div><div>PQC 입력 권한이 없습니다</div></div>
+        <div id="pqc-wrap">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab(this,'pqc','direct')">직접 입력</div>
+            <div class="tab" onclick="switchTab(this,'pqc','history')">입력 이력</div>
+          </div>
+          <div id="pqc-direct">
+            <div class="card">
+              <div class="card-title">기본 정보</div>
+              <div class="form-grid">
+                <div class="form-group"><label class="form-label">제품명</label>
+                  <select class="form-input" id="pqc-prod" onchange="loadSpec('pqc')"></select></div>
+                <div class="form-group"><label class="form-label">LOT No.</label><input class="form-input" id="pqc-lot" placeholder="LOT 번호 입력"></div>
+                <div class="form-group"><label class="form-label">의뢰일</label><input class="form-input" type="date" id="pqc-req"></div>
+                <div class="form-group"><label class="form-label">검사일</label><input class="form-input" type="date" id="pqc-date"></div>
+                <div class="form-group"><label class="form-label">출하업체명</label><input class="form-input" id="pqc-vendor" placeholder="출하업체 입력"></div>
+                <div class="form-group"><label class="form-label">분석자명</label><input class="form-input" id="pqc-analyst" placeholder="분석자 입력"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">시험 항목 입력</div>
+              <div style="overflow-x:auto">
+                <table><thead><tr><th>시험항목</th><th>단위</th><th>규격 (Spec)</th><th>측정값 1</th><th>측정값 2</th><th>측정값 3</th><th>평균</th><th>판정</th></tr></thead>
+                <tbody id="pqc-spec"></tbody></table>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <button class="btn btn-primary" onclick="saveEntry('PQC')">💾 저장</button>
+                <button class="btn btn-ghost" onclick="resetForm('pqc')">초기화</button>
+              </div>
+            </div>
+          </div>
+          <div id="pqc-history" style="display:none">
+            <div class="card">
+              <div class="card-title">PQC 입력 이력</div>
+              <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+                <div class="form-group"><label class="form-label">제품</label>
+                  <select class="form-input" id="pqc-hprod" style="width:170px"><option value="">전체</option></select></div>
+                <div class="form-group"><label class="form-label">시작일</label>
+                  <input class="form-input" type="date" id="pqc-hfrom" style="width:140px"></div>
+                <div class="form-group"><label class="form-label">종료일</label>
+                  <input class="form-input" type="date" id="pqc-hto" style="width:140px"></div>
+                <button class="btn btn-primary" onclick="loadHist('PQC')">조회</button>
+              </div>
+              <div style="overflow-x:auto">
+              <table><thead><tr><th>의뢰번호</th><th>제품명</th><th>LOT</th><th>의뢰일</th><th>검사일</th><th>출하업체</th><th>분석자</th><th>판정</th><th>상세</th></tr></thead>
+              <tbody id="pqc-htable"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- OQC -->
+      <div class="page" id="page-oqc">
+        <div id="oqc-lock" class="lock-msg" style="display:none"><div class="lock-icon">🔒</div><div>OQC 입력 권한이 없습니다</div></div>
+        <div id="oqc-wrap">
+          <div class="tabs">
+            <div class="tab active" onclick="switchTab(this,'oqc','direct')">직접 입력</div>
+            <div class="tab" onclick="switchTab(this,'oqc','history')">입력 이력</div>
+          </div>
+          <div id="oqc-direct">
+            <div class="card">
+              <div class="card-title">기본 정보</div>
+              <div class="form-grid">
+                <div class="form-group"><label class="form-label">제품명</label>
+                  <select class="form-input" id="oqc-prod" onchange="loadSpec('oqc')"></select></div>
+                <div class="form-group"><label class="form-label">LOT No.</label><input class="form-input" id="oqc-lot" placeholder="LOT 번호 입력"></div>
+                <div class="form-group"><label class="form-label">의뢰일</label><input class="form-input" type="date" id="oqc-req"></div>
+                <div class="form-group"><label class="form-label">검사일</label><input class="form-input" type="date" id="oqc-date"></div>
+                <div class="form-group"><label class="form-label">출하업체명</label><input class="form-input" id="oqc-vendor" placeholder="출하업체 입력"></div>
+                <div class="form-group"><label class="form-label">분석자명</label><input class="form-input" id="oqc-analyst" placeholder="분석자 입력"></div>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">시험 항목 입력</div>
+              <div style="overflow-x:auto">
+                <table><thead><tr><th>시험항목</th><th>단위</th><th>규격 (Spec)</th><th>측정값 1</th><th>측정값 2</th><th>측정값 3</th><th>평균</th><th>판정</th></tr></thead>
+                <tbody id="oqc-spec"></tbody></table>
+              </div>
+              <div style="display:flex;gap:10px;margin-top:14px">
+                <button class="btn btn-primary" onclick="saveEntry('OQC')">💾 저장</button>
+                <button class="btn btn-ghost" onclick="resetForm('oqc')">초기화</button>
+              </div>
+            </div>
+          </div>
+          <div id="oqc-history" style="display:none">
+            <div class="card">
+              <div class="card-title">OQC 입력 이력</div>
+              <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:flex-end">
+                <div class="form-group"><label class="form-label">제품</label>
+                  <select class="form-input" id="oqc-hprod" style="width:170px"><option value="">전체</option></select></div>
+                <div class="form-group"><label class="form-label">시작일</label>
+                  <input class="form-input" type="date" id="oqc-hfrom" style="width:140px"></div>
+                <div class="form-group"><label class="form-label">종료일</label>
+                  <input class="form-input" type="date" id="oqc-hto" style="width:140px"></div>
+                <button class="btn btn-primary" onclick="loadHist('OQC')">조회</button>
+              </div>
+              <div style="overflow-x:auto">
+              <table><thead><tr><th>의뢰번호</th><th>제품명</th><th>LOT</th><th>의뢰일</th><th>검사일</th><th>출하업체</th><th>분석자</th><th>판정</th><th>상세</th></tr></thead>
+              <tbody id="oqc-htable"></tbody></table></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TREND -->
+      <div class="page" id="page-trend">
+        <!-- 탭 -->
+        <div class="tabs">
+          <div class="tab active" onclick="switchTrendTab(this,'chart')">📈 Trend 차트</div>
+          <div class="tab" onclick="switchTrendTab(this,'data')">📋 데이터 조회</div>
+        </div>
+
+        <!-- 공통 필터 -->
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group"><label class="form-label">제품 선택</label>
+              <select class="form-input" id="trend-prod" style="width:200px" onchange="onTrendFilter()"></select></div>
+            <div class="form-group"><label class="form-label">기간</label>
+              <select class="form-input" id="trend-period" style="width:120px" onchange="onTrendFilter()">
+                <option value="30">최근 30일</option><option value="90">최근 90일</option><option value="180">최근 180일</option><option value="9999">전체</option></select></div>
+            <div class="form-group"><label class="form-label">검사 유형</label>
+              <select class="form-input" id="trend-type" style="width:140px" onchange="onTrendFilter()">
+                <option value="ALL">IQC+PQC+OQC</option><option value="IQC">IQC</option>
+                <option value="PQC">PQC</option><option value="OQC">OQC</option></select></div>
+            <button class="btn btn-primary" onclick="onTrendFilter()">조회</button>
+          </div>
+        </div>
+
+        <!-- 차트 탭 -->
+        <div id="trend-panel-chart">
+          <div id="trend-area" class="grid2"></div>
+        </div>
+
+        <!-- 데이터 조회 탭 -->
+        <div id="trend-panel-data" style="display:none">
+          <div class="card">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+              <div class="card-title" style="margin-bottom:0">조회 결과 <span id="trend-data-count" style="font-size:11px;color:var(--text3);margin-left:6px"></span></div>
+              <div style="display:flex;gap:8px">
+                <button class="btn btn-ghost" onclick="downloadTrendExcel()">📥 엑셀 다운로드</button>
+                <button class="btn btn-ghost" onclick="downloadTrendCharts()">🖼 차트 이미지 다운로드</button>
+              </div>
+            </div>
+            <div style="overflow-x:auto">
+              <table id="trend-data-table">
+                <thead><tr id="trend-data-head"></tr></thead>
+                <tbody id="trend-data-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CPK -->
+      <div class="page" id="page-cpk">
+        <div class="card" style="margin-bottom:16px">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap">
+            <div class="form-group"><label class="form-label">제품 선택</label>
+              <select class="form-input" id="cpk-prod" style="width:200px"></select></div>
+            <div class="form-group"><label class="form-label">기간</label>
+              <select class="form-input" id="cpk-period" style="width:120px">
+                <option value="30">최근 30일</option><option value="90">최근 90일</option></select></div>
+            <button class="btn btn-primary" onclick="renderCpk()">조회</button>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-title">항목별 Cpk 현황</div><div id="cpk-list" style="max-height:400px;overflow-y:auto"></div></div>
+          <div class="card"><div class="card-title">Cpk 분포 차트</div><div class="chart-wrap chart-tall"><canvas id="ch-cpk"></canvas></div></div>
+        </div>
+      </div>
+
+      <!-- SETTINGS -->
+      <div class="page" id="page-settings">
+        <div id="set-lock" class="lock-msg" style="display:none"><div class="lock-icon">🔒</div><div>설정 접근 권한이 없습니다</div></div>
+        <div id="set-wrap">
+          <div class="grid2">
+            <div>
+              <div class="card">
+                <div class="card-title">사용자 권한 관리</div>
+                <div style="overflow-x:auto">
+                <table><thead><tr><th>ID</th><th>이름</th><th>권한</th><th>IQC</th><th>PQC</th><th>OQC</th><th>설정</th><th></th></tr></thead>
+                <tbody id="user-tbl"></tbody></table></div>
+                <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="showModal('modal-user')">+ 사용자 추가</button>
+              </div>
+              <div class="card">
+                <div class="card-title">시스템 설정</div>
+                <div class="settings-row"><div><div class="settings-label">자동 합부 판정</div><div class="settings-sub">규격 기준 PASS/FAIL 자동 계산</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+                <div class="settings-row"><div><div class="settings-label">데이터 로컬 저장</div><div class="settings-sub">브라우저에 데이터 보관</div></div><div class="toggle on"></div></div>
+                <div class="settings-row"><div><div class="settings-label">Spec 이탈 알림</div><div class="settings-sub">FAIL 발생 시 경고 표시</div></div><div class="toggle on" onclick="this.classList.toggle('on')"></div></div>
+              </div>
+            </div>
+            <div>
+              <div class="card">
+                <div class="card-title">제품 Spec 관리</div>
+                <select class="form-input" id="spec-sel" onchange="renderSpecEdit()" style="width:100%;margin-bottom:12px"></select>
+                <div style="overflow-x:auto;max-height:380px;overflow-y:auto">
+                <table><thead><tr><th>시험항목</th><th>단위</th><th>규격</th><th></th></tr></thead>
+                <tbody id="spec-tbl"></tbody></table></div>
+                <button class="btn btn-ghost btn-sm" style="margin-top:10px" onclick="showModal('modal-spec')">+ 항목 추가</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD USER -->
+<div class="modal-bg" id="modal-user">
+  <div class="modal">
+    <div class="modal-title">사용자 추가</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">아이디</label><input class="form-input" id="nu-id" placeholder="영문/숫자"></div>
+      <div class="form-group"><label class="form-label">이름</label><input class="form-input" id="nu-name" placeholder="이름"></div>
+      <div class="form-group"><label class="form-label">비밀번호</label><input class="form-input" id="nu-pw" type="password" placeholder="비밀번호"></div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px"><label class="form-label">권한</label>
+      <select class="form-input" id="nu-role" style="width:160px">
+        <option value="admin">관리자</option><option value="input">입력자</option><option value="viewer">조회</option>
+      </select></div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap">
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="p-iqc"> IQC 입력</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="p-pqc"> PQC 입력</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="p-oqc"> OQC 입력</label>
+      <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);cursor:pointer"><input type="checkbox" id="p-set"> 설정</label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-user')">취소</button>
+      <button class="btn btn-primary" onclick="addUser()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: ADD SPEC -->
+<div class="modal-bg" id="modal-spec">
+  <div class="modal">
+    <div class="modal-title">항목 추가</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">항목명</label><input class="form-input" id="ns-item" placeholder="항목명"></div>
+      <div class="form-group"><label class="form-label">단위</label><input class="form-input" id="ns-unit" placeholder="단위"></div>
+      <div class="form-group"><label class="form-label">규격</label><input class="form-input" id="ns-spec" placeholder="규격값"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-spec')">취소</button>
+      <button class="btn btn-primary" onclick="addSpecItem()">추가</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DETAIL -->
+<div class="modal-bg" id="modal-detail">
+  <div class="modal" style="width:640px">
+    <div class="modal-title" id="detail-title">상세 내역</div>
+    <div style="overflow-x:auto">
+    <table><thead><tr><th>항목</th><th>단위</th><th>규격</th><th>측정1</th><th>측정2</th><th>측정3</th><th>평균</th><th>판정</th></tr></thead>
+    <tbody id="detail-tbl"></tbody></table></div>
+    <div class="modal-footer"><button class="btn btn-ghost" onclick="closeModal('modal-detail')">닫기</button></div>
+  </div>
+</div>
+
+<script>
+// ═══ SPEC DATA ═══
+const SPECS = {"GBE-I25D": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Dark brown"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "1.078"}, {"item": "Iodine (I2)", "unit": "wt%", "spec": "1.93"}, {"item": "외관 확인", "unit": "-", "spec": "부풀음 없음"}, {"item": "Gross weight", "unit": "L", "spec": "20L"}], "ETCR-400": [{"item": "Ceric Ammonium Nitrate", "unit": "Normality", "spec": "0.161"}, {"item": "Total Acidity", "unit": "%(w/w)", "spec": "12.53"}, {"item": "pH", "unit": "-", "spec": "< 1"}, {"item": "Specific Gravity", "unit": "-", "spec": "1.099"}, {"item": "Cd", "unit": "ppm", "spec": "< 0.05"}, {"item": "Cu", "unit": "ppm", "spec": "< 0.05"}, {"item": "Fe", "unit": "ppm", "spec": "< 0.05"}, {"item": "Ni", "unit": "ppm", "spec": "< 0.05"}, {"item": "Zn", "unit": "ppm", "spec": "< 0.05"}, {"item": "Particle(≥0.5㎛)", "unit": "ea", "spec": "86"}], "CR-7": [{"item": "Ceric Ammonium Nitrate", "unit": "Normality", "spec": "0.158 ~ 0.168"}, {"item": "Total Acidity", "unit": "% w/w", "spec": "11.85 ~ 13.15"}, {"item": "pH", "unit": "-", "spec": "< 1"}, {"item": "Specific Gravity", "unit": "g/ml", "spec": "1.095 ~ 1.104"}], "CR-7S": [{"item": "Ceric Ammonium Nitrate", "unit": "Normality", "spec": "0.158 ~ 0.168"}, {"item": "Total Acidity", "unit": "% w/w", "spec": "11.85 ~ 13.15"}, {"item": "pH", "unit": "-", "spec": "< 1"}, {"item": "Specific Gravity", "unit": "g/ml", "spec": "1.095 ~ 1.104"}], "CS-903": [{"item": "Apperance", "unit": "-", "spec": "Clear"}, {"item": "Assay", "unit": "Wt%", "spec": "57.0 ± 0.3"}, {"item": "Particle (≥ 0.5㎛)", "unit": "ea/㎖", "spec": "≤ 100"}], "SKWC-GET15": [{"item": "I Assay", "unit": "%(w/v)", "spec": "1.30 ± 0.1"}, {"item": "KI Assay", "unit": "%(w/v)", "spec": "2.50 ± 0.15"}, {"item": "Specific Gravity (@25℃)", "unit": "-", "spec": "1.03 ± 0.05"}, {"item": "pH", "unit": "-", "spec": "3.8 ± 1.0"}, {"item": "Particle(≥0.5㎛)", "unit": "ea/㎖", "spec": "≤ 70"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "≤ 230"}, {"item": "Particle(≥0.2㎛)", "unit": "ea/㎖", "spec": "≤ 950"}, {"item": "Chloride", "unit": "ppm", "spec": "≤ 40"}, {"item": "Al", "unit": "ppb", "spec": "≤ 50"}, {"item": "Ca", "unit": "ppb", "spec": "≤ 930000"}, {"item": "Cr", "unit": "ppb", "spec": "≤ 50"}, {"item": "Co", "unit": "ppb", "spec": "≤ 50"}, {"item": "Cu", "unit": "ppb", "spec": "≤ 50"}, {"item": "Fe", "unit": "ppb", "spec": "≤ 50"}, {"item": "Mg", "unit": "ppb", "spec": "≤ 50"}, {"item": "Mn", "unit": "ppb", "spec": "≤ 50"}, {"item": "Ni", "unit": "ppb", "spec": "≤ 50"}, {"item": "Zn", "unit": "ppb", "spec": "≤ 50"}, {"item": "B", "unit": "ppb", "spec": "≤ 68000"}, {"item": "W", "unit": "ppb", "spec": "≤ 50"}, {"item": "Cd", "unit": "ppb", "spec": "≤ 50"}, {"item": "Ba", "unit": "ppb", "spec": "≤ 50"}, {"item": "Na", "unit": "ppb", "spec": "≤ 930000"}, {"item": "Ag", "unit": "ppb", "spec": "≤ 50"}, {"item": "As", "unit": "ppb", "spec": "≤ 15000"}, {"item": "Au", "unit": "ppb", "spec": "≤ 50"}, {"item": "Ga", "unit": "ppb", "spec": "≤ 1000"}, {"item": "Li", "unit": "ppb", "spec": "≤ 50"}, {"item": "Mo", "unit": "ppb", "spec": "≤ 50"}, {"item": "Ti", "unit": "ppb", "spec": "≤ 50"}, {"item": "Pb", "unit": "ppb", "spec": "≤ 50"}, {"item": "Zr", "unit": "ppb", "spec": "≤ 50"}, {"item": "Sb", "unit": "ppb", "spec": "≤ 10000"}, {"item": "Si", "unit": "ppb", "spec": "≤ 44000"}, {"item": "Sn", "unit": "ppb", "spec": "≤ 50"}, {"item": "Sr", "unit": "ppb", "spec": "≤ 10000"}, {"item": "Ta", "unit": "ppb", "spec": "≤ 50"}, {"item": "V", "unit": "ppb", "spec": "≤ 50"}, {"item": "Total Metal 1", "unit": "ppb", "spec": "≤ 1100"}, {"item": "Total Metal 2", "unit": "ppb", "spec": "≤ 2008000"}], "DT-20": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Clear"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "-"}, {"item": "pH", "unit": "-", "spec": "-"}], "APAD-1": [{"item": "Appearance", "unit": "-", "spec": "Light Yellow(침전물)"}, {"item": "Specific gravity", "unit": "-", "spec": "1.035±0.1"}, {"item": "State", "unit": "-", "spec": "Liquid"}, {"item": "pH", "unit": "-", "spec": "1 이상"}], "WSCR-1": [{"item": "Ceric Ammonium Nitrate", "unit": "0.158 ~ 0.168", "spec": "-"}, {"item": "Total Acidity", "unit": "11.85 ~ 13.15", "spec": "-"}, {"item": "PH", "unit": "< 1", "spec": "-"}, {"item": "Specific Gravity", "unit": "1.095 ~ 1.104", "spec": "-"}], "WSCR-2": [{"item": "Ceric Ammonium Nitrate", "unit": "0.158 ~ 0.168", "spec": "-"}, {"item": "Total Acidity", "unit": "11.85 ~ 13.15", "spec": "-"}, {"item": "PH", "unit": "< 1", "spec": "-"}, {"item": "Specific Gravity", "unit": "1.095 ~ 1.104", "spec": "-"}], "APMD-1": [{"item": "Concentration", "unit": "%", "spec": "1.830 ± 0.005"}, {"item": "Particle (≥ 0.5㎛)", "unit": "ea/㎖", "spec": "≤ 100"}], "APAL-1": [{"item": "Specific Gravity", "unit": "-", "spec": "1.59"}, {"item": "Phosphoric Acid", "unit": "wt%", "spec": "73.7"}, {"item": "A", "unit": "wt%", "spec": "10"}, {"item": "B", "unit": "wt%", "spec": "1.85"}, {"item": "Aluminum (Al)", "unit": "ppb", "spec": "66"}, {"item": "Calcium (Ca)", "unit": "ppb", "spec": "13"}, {"item": "Copper (Cu)", "unit": "ppb", "spec": "178"}, {"item": "Iron (Fe)", "unit": "ppb", "spec": "136"}, {"item": "Lead (Pb)", "unit": "ppb", "spec": "1"}, {"item": "Particle (≥0.5㎛)", "unit": "pcs/ml", "spec": "90"}, {"item": "Particle (≥1.0㎛)", "unit": "pcs/ml", "spec": "8"}], "APCN-3": [{"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.112"}, {"item": "CAN", "unit": "Normality", "spec": "11.4"}, {"item": "pH", "unit": "-", "spec": "<1"}, {"item": "Particle(≥0.5㎛)", "unit": "ea", "spec": "90.52"}], "APGE-11(GS4000)": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Clear"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "-"}, {"item": "pH", "unit": "-", "spec": "-"}], "ZD-50": [{"item": "Appearance", "unit": "-", "spec": "Clear"}, {"item": "TMAH Concentration", "unit": "wt%", "spec": "2.25 ± 0.005"}, {"item": "Carbonate", "unit": "ppm", "spec": "＜300"}, {"item": "Chloride", "unit": "ppb", "spec": "＜300"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "＜100"}, {"item": "Na", "unit": "ppb", "spec": "＜10"}, {"item": "Ca", "unit": "ppb", "spec": "＜10"}, {"item": "Sn", "unit": "ppb", "spec": "＜10"}, {"item": "Fe", "unit": "ppb", "spec": "＜10"}, {"item": "Mg", "unit": "ppb", "spec": "＜10"}, {"item": "Cu", "unit": "ppb", "spec": "＜10"}, {"item": "Mn", "unit": "ppb", "spec": "＜10"}, {"item": "Al", "unit": "ppb", "spec": "＜10"}, {"item": "Ni", "unit": "ppb", "spec": "＜10"}, {"item": "Zn", "unit": "ppb", "spec": "＜10"}], "APDM-100": [{"item": "Appearance", "unit": "-", "spec": "Colorless"}, {"item": "Color", "unit": "Gardner", "spec": "7"}, {"item": "pH (10% aq. Soln.)", "unit": "-", "spec": "12.48"}, {"item": "Specific gravity (at 20℃)", "unit": "-", "spec": "1.084"}, {"item": "Component A", "unit": "%", "spec": "93.2"}, {"item": "Component B", "unit": "%", "spec": "1.5"}, {"item": "Water", "unit": "%", "spec": "1.411"}, {"item": "Aluminum", "unit": "ppb", "spec": "< 50"}, {"item": "Calcium", "unit": "ppb", "spec": "< 50"}, {"item": "Chromium", "unit": "ppb", "spec": "< 50"}, {"item": "Copper", "unit": "ppb", "spec": "< 50"}, {"item": "Iron", "unit": "ppb", "spec": "< 50"}, {"item": "Lead", "unit": "ppb", "spec": "< 50"}, {"item": "Magnesium", "unit": "ppb", "spec": "< 50"}, {"item": "Nickel", "unit": "ppb", "spec": "< 50"}, {"item": "Potassium", "unit": "ppb", "spec": "< 50"}, {"item": "Sodium", "unit": "ppb", "spec": "< 50"}, {"item": "Tin", "unit": "ppb", "spec": "< 50"}, {"item": "Zinc", "unit": "ppb", "spec": "< 50"}, {"item": "Manganese", "unit": "ppb", "spec": "< 50"}, {"item": "Particle", "unit": "ea/ml", "spec": "90.5"}], "AP-DM64": [{"item": "Appearance", "unit": "-", "spec": "Clear liquid"}, {"item": "pH (10% aq. Soln.)", "unit": "-", "spec": "12.11"}, {"item": "Specific gravity (at 20℃)", "unit": "-", "spec": "1.06"}], "APKD-025": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Clear"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "-"}, {"item": "pH", "unit": "-", "spec": "-"}], "APPD-01": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Clear liquid"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "1.015 ~1.035"}, {"item": "Normality (A)", "unit": "mmol/g", "spec": "0.405~0.445"}, {"item": "Normality (B)", "unit": "mmol/g", "spec": "0.480~0.540"}, {"item": "Particle", "unit": "-", "spec": "Pass for 0.2 ㎛ filter"}], "APPS-200": [{"item": "Assay(NMP)", "unit": "wt%", "spec": "＞ 99.9"}, {"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.026 ~ 1.035"}, {"item": "Moisture", "unit": "ppm", "spec": "< 200"}, {"item": "APHA", "unit": "Hazen", "spec": "< 20"}, {"item": "Particle (≥0.5㎛)", "unit": "ea/㎖", "spec": "≤ 5"}, {"item": "PH", "unit": "-", "spec": "6~8"}, {"item": "Na", "unit": "ppb", "spec": "≤ 10"}, {"item": "K", "unit": "ppb", "spec": "≤ 5"}, {"item": "Mg", "unit": "ppb", "spec": "≤ 5"}, {"item": "Ca", "unit": "ppb", "spec": "≤ 5"}, {"item": "Fe", "unit": "ppb", "spec": "≤ 10"}, {"item": "Cu", "unit": "ppb", "spec": "≤ 5"}, {"item": "Zn", "unit": "ppb", "spec": "≤ 5"}, {"item": "Al", "unit": "ppb", "spec": "≤ 5"}, {"item": "Ni", "unit": "ppb", "spec": "≤ 5"}, {"item": "Cr", "unit": "ppb", "spec": "≤ 5"}, {"item": "Pb", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ti", "unit": "ppb", "spec": "≤ 10"}, {"item": "Mn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Sn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Chloride", "unit": "ppb", "spec": "≤ 200"}, {"item": "Sulfate", "unit": "ppb", "spec": "≤ 100"}], "JPS-34U": [{"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.10±0.05"}, {"item": "pH (10% 희석)", "unit": "-", "spec": "3.5±0.5"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "-"}], "AP-PD38": [{"item": "TMAH Concentration", "unit": "wt%", "spec": "2.380 ± 0.005"}, {"item": "Carbonate(CO32-)", "unit": "ppm", "spec": "< 300"}, {"item": "Chloride(Cl-)", "unit": "ppb", "spec": "< 300"}, {"item": "Particle(≥0.2㎛)", "unit": "ea/㎖", "spec": "< 100"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "< 50"}, {"item": "Ca", "unit": "ppb", "spec": "< 5"}, {"item": "Na", "unit": "ppb", "spec": "< 5"}, {"item": "Fe", "unit": "ppb", "spec": "< 5"}, {"item": "K", "unit": "ppb", "spec": "< 5"}, {"item": "Mg", "unit": "ppb", "spec": "< 5"}, {"item": "Al", "unit": "ppb", "spec": "< 5"}, {"item": "Mn", "unit": "ppb", "spec": "< 5"}, {"item": "Ag", "unit": "ppb", "spec": "< 5"}, {"item": "Ni", "unit": "ppb", "spec": "< 5"}, {"item": "Cu", "unit": "ppb", "spec": "< 5"}, {"item": "Zn", "unit": "ppb", "spec": "< 5"}], "AP-PD14": [{"item": "TMAH Concentration", "unit": "wt%", "spec": "2.380 ± 0.005"}, {"item": "Carbonate(CO32-)", "unit": "ppm", "spec": "< 300"}, {"item": "Chloride(Cl-)", "unit": "ppb", "spec": "< 300"}, {"item": "Particle(≥0.2㎛)", "unit": "ea/㎖", "spec": "< 100"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "< 50"}, {"item": "Ca", "unit": "ppb", "spec": "< 5"}, {"item": "Na", "unit": "ppb", "spec": "< 5"}, {"item": "Fe", "unit": "ppb", "spec": "< 5"}, {"item": "K", "unit": "ppb", "spec": "< 5"}, {"item": "Mg", "unit": "ppb", "spec": "< 5"}, {"item": "Al", "unit": "ppb", "spec": "< 5"}, {"item": "Mn", "unit": "ppb", "spec": "< 5"}, {"item": "Ag", "unit": "ppb", "spec": "< 5"}, {"item": "Ni", "unit": "ppb", "spec": "< 5"}, {"item": "Cu", "unit": "ppb", "spec": "< 5"}, {"item": "Zn", "unit": "ppb", "spec": "< 5"}], "APKOH-45": [{"item": "KOH (Total alkali as KOH)", "unit": "%", "spec": "45.1"}, {"item": "K2CO3", "unit": "%", "spec": "0.1"}, {"item": "NH4OH", "unit": "ppm", "spec": "5"}, {"item": "N", "unit": "ppm", "spec": "0"}, {"item": "Al", "unit": "ppb", "spec": "2"}, {"item": "Ca", "unit": "ppb", "spec": "24.5"}, {"item": "Pb", "unit": "ppb", "spec": "0.1"}, {"item": "Mg", "unit": "ppb", "spec": "1.5"}, {"item": "Co", "unit": "ppb", "spec": "1.7"}, {"item": "Cr", "unit": "ppb", "spec": "1.6"}, {"item": "Cu", "unit": "ppb", "spec": "1.9"}, {"item": "Fe", "unit": "ppb", "spec": "4.2"}, {"item": "Ni", "unit": "ppb", "spec": "2.6"}, {"item": "Ti", "unit": "ppb", "spec": "1.3"}, {"item": "Zn", "unit": "ppb", "spec": "3.9"}, {"item": "Na", "unit": "%", "spec": "0.14"}, {"item": "Particle", "unit": "-", "spec": "Pass for 0.2 ㎛ filter"}], "APNS-500": [{"item": "Apperance", "unit": "-", "spec": "Clear"}, {"item": "pH (10% Sol 25%)", "unit": "wt%", "spec": "12.39"}, {"item": "Water", "unit": "%", "spec": "4"}, {"item": "Specific Gravity (25C)", "unit": "-", "spec": "1.08"}, {"item": "Na", "unit": "ppb", "spec": "< 5"}, {"item": "Mg", "unit": "ppb", "spec": "< 5"}, {"item": "Al", "unit": "ppb", "spec": "< 5"}, {"item": "K", "unit": "ppb", "spec": "< 5"}, {"item": "Ca", "unit": "ppb", "spec": "< 5"}, {"item": "Ti", "unit": "ppb", "spec": "< 5"}, {"item": "Cr", "unit": "ppb", "spec": "< 5"}, {"item": "Mn", "unit": "ppb", "spec": "< 5"}, {"item": "Fe", "unit": "ppb", "spec": "< 5"}, {"item": "Ni", "unit": "ppb", "spec": "< 5"}, {"item": "Cu", "unit": "ppb", "spec": "< 5"}, {"item": "Zn", "unit": "ppb", "spec": "< 5"}, {"item": "Sn", "unit": "ppb", "spec": "< 5"}, {"item": "Au", "unit": "ppb", "spec": "< 5"}, {"item": "Pb", "unit": "ppb", "spec": "< 5"}], "AP-PD25": [{"item": "TMAH Concentration", "unit": "wt%", "spec": "2.380 ± 0.005"}, {"item": "Carbonate(CO32-)", "unit": "ppm", "spec": "< 300"}, {"item": "Chloride(Cl-)", "unit": "ppb", "spec": "< 300"}, {"item": "Particle(≥0.2㎛)", "unit": "ea/㎖", "spec": "< 100"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "< 50"}, {"item": "Ca", "unit": "ppb", "spec": "< 5"}, {"item": "Na", "unit": "ppb", "spec": "< 5"}, {"item": "Fe", "unit": "ppb", "spec": "< 5"}, {"item": "K", "unit": "ppb", "spec": "< 5"}, {"item": "Mg", "unit": "ppb", "spec": "< 5"}, {"item": "Al", "unit": "ppb", "spec": "< 5"}, {"item": "Mn", "unit": "ppb", "spec": "< 5"}, {"item": "Ag", "unit": "ppb", "spec": "< 5"}, {"item": "Ni", "unit": "ppb", "spec": "< 5"}, {"item": "Cu", "unit": "ppb", "spec": "< 5"}, {"item": "Zn", "unit": "ppb", "spec": "< 5"}], "GME-N01": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Dark brown"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "1.078"}, {"item": "Iodine (I2)", "unit": "wt%", "spec": "1.93"}, {"item": "외관 확인", "unit": "-", "spec": "부풀음 없음"}, {"item": "Gross weight", "unit": "L", "spec": "20L"}], "BTE-132A": [{"item": "외관", "unit": "-", "spec": "노란색 or 갈색 투명액체"}, {"item": "KOH Assay", "unit": "wt%", "spec": "10.9 ± 1.0"}, {"item": "pH(at 25℃)", "unit": "-", "spec": ">13"}, {"item": "비중(at 25℃)", "unit": "-", "spec": "1.130 ± 0.03"}, {"item": "Chloride(Cl)", "unit": "ppm", "spec": "< 5"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "< 1000"}, {"item": "Al", "unit": "ppm", "spec": "< 5"}, {"item": "Ca", "unit": "ppm", "spec": "<5"}, {"item": "Cu", "unit": "ppm", "spec": "< 5"}, {"item": "Fe", "unit": "ppm", "spec": "< 5"}, {"item": "Pb", "unit": "ppm", "spec": "< 5"}, {"item": "Na", "unit": "%", "spec": "< 0.1"}], "TFMS": [{"item": "Appearance", "unit": "-", "spec": "Colorless liquid"}, {"item": "Purity of CF3SO3H", "unit": "wt.%", "spec": "≥ 99.0"}, {"item": "Free Fluorine", "unit": "wt.ppm", "spec": "≤ 10"}, {"item": "H2O", "unit": "wt.ppm", "spec": "≤ 500"}, {"item": "SO4", "unit": "wt.ppm", "spec": "≤ 50"}], "APND-10": [{"item": "Apperarance", "unit": "-", "spec": "Clear"}, {"item": "Assay", "unit": "wt%", "spec": "1.00 ± 0.02"}, {"item": "Fe", "unit": "ppb", "spec": "< 50"}, {"item": "Cd", "unit": "ppb", "spec": "< 50"}, {"item": "Mn", "unit": "ppb", "spec": "< 50"}, {"item": "Ni", "unit": "ppb", "spec": "< 50"}, {"item": "Zn", "unit": "ppb", "spec": "< 50"}, {"item": "Particle(≥0.3㎛)", "unit": "ea/㎖", "spec": "< 100"}], "AP-CY200": [{"item": "Appearance", "unit": "-", "spec": "Clear Liquid"}, {"item": "Assay", "unit": "%", "spec": "> 99.0"}, {"item": "Water", "unit": "%", "spec": "< 0.5"}, {"item": "Color", "unit": "APHA", "spec": "≤ 30"}, {"item": "Na", "unit": "ppb", "spec": "≤ 10"}, {"item": "Fe", "unit": "ppb", "spec": "≤ 10"}, {"item": "Mg", "unit": "ppb", "spec": "≤ 10"}, {"item": "Al", "unit": "ppb", "spec": "≤ 10"}, {"item": "K", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ca", "unit": "ppb", "spec": "≤ 10"}, {"item": "Mn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ni", "unit": "ppb", "spec": "≤ 10"}, {"item": "Cu", "unit": "ppb", "spec": "≤ 10"}, {"item": "Zn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ag", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ba", "unit": "ppb", "spec": "≤ 10"}, {"item": "Cd", "unit": "ppb", "spec": "≤ 10"}, {"item": "Co", "unit": "ppb", "spec": "≤ 10"}, {"item": "Cr", "unit": "ppb", "spec": "≤ 10"}, {"item": "Li", "unit": "ppb", "spec": "≤ 10"}, {"item": "Pb", "unit": "ppb", "spec": "≤ 10"}, {"item": "Sn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Particle", "unit": "-", "spec": "Pass for 0.2㎛ Filter"}], "APCU-2": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Colorless"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "1.04 ± 0.05"}, {"item": "형상 (State)", "unit": "-", "spec": "Liquid"}, {"item": "pH", "unit": "-", "spec": "7 ± 1"}], "GME-C50": [{"item": "외관", "unit": "-", "spec": "암갈색투명액체"}, {"item": "I Assay", "unit": "w/v%", "spec": "5.0 ± 0.2"}, {"item": "비중(at 25℃)", "unit": "-", "spec": "1.108 ± 0.05"}], "AP-KIT": [{"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.17 ± 0.05"}, {"item": "pH", "unit": "-", "spec": "< 1"}], "AP-IPA": [{"item": "Assay (by GC)", "unit": "%", "spec": "Min 99.9"}, {"item": "Color", "unit": "APHA", "spec": "Max 10"}, {"item": "Alkalinity", "unit": "ppm", "spec": "Max 10"}, {"item": "Acidity", "unit": "ppm", "spec": "Max 10"}, {"item": "Water", "unit": "%", "spec": "Max 0.05"}, {"item": "Residue after evaporation", "unit": "ppm", "spec": "Max 5"}, {"item": "Chloride (Cl)", "unit": "ppm", "spec": "Max 0.05"}, {"item": "Phosphate(PO₄)", "unit": "ppm", "spec": "Max 0.05"}, {"item": "Aluminum (Al)", "unit": "ppb", "spec": "Max 5"}, {"item": "Arsenic (As)", "unit": "ppb", "spec": "Max 1"}, {"item": "Barium(Ba)", "unit": "ppb", "spec": "Max 1"}, {"item": "Cadmium (Cd)", "unit": "ppb", "spec": "Max 1"}, {"item": "Calcium (Ca)", "unit": "ppb", "spec": "Max 5"}, {"item": "Chromium (Cr)", "unit": "ppb", "spec": "Max 1"}, {"item": "Cobalt (Co)", "unit": "ppb", "spec": "Max 1"}, {"item": "Copper (Cu)", "unit": "ppb", "spec": "Max 3"}, {"item": "Iron (Fe)", "unit": "ppb", "spec": "Max 5"}, {"item": "Lead (Pb)", "unit": "ppb", "spec": "Max 1"}, {"item": "Lithium (Li)", "unit": "ppb", "spec": "Max 1"}, {"item": "Magnesium (Mg)", "unit": "ppb", "spec": "Max 1"}, {"item": "Manganese (Mn)", "unit": "ppb", "spec": "Max 1"}, {"item": "Nickel (Ni)", "unit": "ppb", "spec": "Max 3"}, {"item": "Potassium (K)", "unit": "ppb", "spec": "Max 5"}, {"item": "Silver (Ag)", "unit": "ppb", "spec": "Max 1"}, {"item": "Sodium (Na)", "unit": "ppb", "spec": "Max 20"}, {"item": "Strontium (Sr)", "unit": "ppb", "spec": "Max 1"}, {"item": "Zinc (Zn)", "unit": "ppb", "spec": "Max 1"}, {"item": "Particle (≥0.5㎛)", "unit": "pcs/㎖", "spec": "Max 30"}], "AP-ACETONE": [{"item": "Assay (by GC)", "unit": "%", "spec": "Min 99.8"}, {"item": "Color", "unit": "APHA", "spec": "Max 10"}, {"item": "Alkalinity", "unit": "ppm", "spec": "Max 5"}, {"item": "Acidity", "unit": "ppm", "spec": "Max 10"}, {"item": "Water", "unit": "%", "spec": "Max 0.25"}, {"item": "Residue after evaporation", "unit": "ppm", "spec": "Max 5"}, {"item": "Chloride (Cl)", "unit": "ppm", "spec": "Max 0.2"}, {"item": "Phosphate(PO₄)", "unit": "ppm", "spec": "Max 0.1"}, {"item": "Aluminum (Al)", "unit": "ppb", "spec": "Max 10"}, {"item": "Arsenic (As)", "unit": "ppb", "spec": "Max 5"}, {"item": "Barium(Ba)", "unit": "ppb", "spec": "Max 1"}, {"item": "Cadmium (Cd)", "unit": "ppb", "spec": "Max 1"}, {"item": "Calcium (Ca)", "unit": "ppb", "spec": "Max 1"}, {"item": "Chromium (Cr)", "unit": "ppb", "spec": "Max 2"}, {"item": "Cobalt (Co)", "unit": "ppb", "spec": "Max 1"}, {"item": "Copper (Cu)", "unit": "ppb", "spec": "Max 1"}, {"item": "Iron (Fe)", "unit": "ppb", "spec": "Max 5"}, {"item": "Lead (Pb)", "unit": "ppb", "spec": "Max 5"}, {"item": "Lithium (Li)", "unit": "ppb", "spec": "Max 1"}, {"item": "Magnesium (Mg)", "unit": "ppb", "spec": "Max 1"}, {"item": "Manganese (Mn)", "unit": "ppb", "spec": "Max 1"}, {"item": "Nickel (Ni)", "unit": "ppb", "spec": "Max 1"}, {"item": "Potassium (K)", "unit": "ppb", "spec": "Max 5"}, {"item": "Silver (Ag)", "unit": "ppb", "spec": "Max 1"}, {"item": "Sodium (Na)", "unit": "ppb", "spec": "Max 20"}, {"item": "Strontium (Sr)", "unit": "ppb", "spec": "Max 1"}, {"item": "Zinc (Zn)", "unit": "ppb", "spec": "Max 1"}, {"item": "Particle (≥0.5㎛)", "unit": "pcs/㎖", "spec": "Max 30"}], "APMC-17": [{"item": "Appearance", "unit": "-", "spec": "Water White"}, {"item": "Specific Gravity (at 20℃)", "unit": "-", "spec": "1.015 ± 0.01"}, {"item": "pH", "unit": "-", "spec": "11.55 ± 0.2"}], "APPC-1": [{"item": "Color", "unit": "-", "spec": "Light yellow or Brown yellow"}, {"item": "Water contents", "unit": "ppm", "spec": "≤ 500"}, {"item": "N,N-Diethylformamide", "unit": "wt%", "spec": "≥ 99.5"}, {"item": "Specific Gravity(25℃)", "unit": "-", "spec": "0.91 ± 0.05"}], "GC-907": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Colorless"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "0.863"}], "GC-906": [{"item": "Appearance", "unit": "-", "spec": "Colorless"}, {"item": "Specific gravity", "unit": "-", "spec": "0.987"}, {"item": "State", "unit": "-", "spec": "Liquid"}, {"item": "pH", "unit": "-", "spec": "7.37"}], "DTH-2": [{"item": "Color", "unit": "-", "spec": "Clear or yellow"}, {"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.090 ± 0.006"}, {"item": "pH", "unit": "-", "spec": "≥ 12"}, {"item": "Cd", "unit": "ppm", "spec": "≤ 5"}, {"item": "Cu", "unit": "ppm", "spec": "≤ 5"}, {"item": "Fe", "unit": "ppm", "spec": "≤ 5"}, {"item": "Ni", "unit": "ppm", "spec": "≤ 5"}, {"item": "Zn", "unit": "ppm", "spec": "≤ 5"}], "APTH-10": [{"item": "Purity", "unit": "%", "spec": "> 99.5"}, {"item": "Water", "unit": "ppm", "spec": "< 300"}, {"item": "Color", "unit": "APHA", "spec": "< 10"}, {"item": "Specific Gravity(at 25℃)", "unit": "-", "spec": "0.965 ± 0.005"}, {"item": "Particle (≥0.5㎛)", "unit": "ea/㎖", "spec": "< 10"}, {"item": "Na", "unit": "ppb", "spec": "< 10"}, {"item": "Mg", "unit": "ppb", "spec": "< 10"}, {"item": "Al", "unit": "ppb", "spec": "< 10"}, {"item": "K", "unit": "ppb", "spec": "< 10"}, {"item": "Ca", "unit": "ppb", "spec": "< 10"}, {"item": "Cr", "unit": "ppb", "spec": "< 10"}, {"item": "Mn", "unit": "ppb", "spec": "< 10"}, {"item": "Fe", "unit": "ppb", "spec": "< 10"}, {"item": "Ni", "unit": "ppb", "spec": "< 10"}, {"item": "Cu", "unit": "ppb", "spec": "< 10"}, {"item": "Zn", "unit": "ppb", "spec": "< 10"}, {"item": "Sn", "unit": "ppb", "spec": "< 10"}, {"item": "Pb", "unit": "ppb", "spec": "< 10"}], "APTI-H1-B": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Colorless or Pale yellow"}, {"item": "Particle(0.5㎛)", "unit": "ea/㎖", "spec": "< 200"}, {"item": "Specific Gravity", "unit": "-", "spec": "1.118 ± 0.05"}, {"item": "형상 (State)", "unit": "-", "spec": "Liquid"}, {"item": "pH (@25℃)", "unit": "-", "spec": "8.2 ± 0.1"}], "APTI-H1(C)": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Colorless or Pale yellow"}, {"item": "Particle(0.5㎛)", "unit": "ea/㎖", "spec": "< 200"}, {"item": "Specific Gravity", "unit": "-", "spec": "1.118 ± 0.05"}, {"item": "형상 (State)", "unit": "-", "spec": "Liquid"}, {"item": "pH (@25℃)", "unit": "-", "spec": "8.2 ± 0.1"}], "APTH-73": [{"item": "Water", "unit": "ppm", "spec": "≤ 300"}, {"item": "Specific Gravity(at 25℃)", "unit": "-", "spec": "0.930±0.005"}, {"item": "Fe", "unit": "ppb", "spec": "≤ 2"}, {"item": "Cu", "unit": "ppb", "spec": "≤ 2"}, {"item": "Na", "unit": "ppb", "spec": "≤ 2"}, {"item": "K", "unit": "ppb", "spec": "≤ 2"}, {"item": "Ca", "unit": "ppb", "spec": "≤ 2"}, {"item": "Mn", "unit": "ppb", "spec": "≤ 2"}, {"item": "Mg", "unit": "ppb", "spec": "≤ 2"}, {"item": "Ni", "unit": "ppb", "spec": "≤ 2"}, {"item": "Particle (≥0.5㎛)", "unit": "ea/㎖", "spec": "≤ 50"}], "APPS-1": [{"item": "Assay(NMP)", "unit": "wt%", "spec": "＞ 99.9"}, {"item": "Specific Gravity(25℃)", "unit": "-", "spec": "1.026 ~ 1.035"}, {"item": "Moisture", "unit": "ppm", "spec": "< 200"}, {"item": "APHA", "unit": "Hazen", "spec": "< 20"}, {"item": "Particle (≥0.5㎛)", "unit": "ea/㎖", "spec": "≤ 5"}, {"item": "PH", "unit": "-", "spec": "6~8"}, {"item": "Na", "unit": "ppb", "spec": "≤ 10"}, {"item": "K", "unit": "ppb", "spec": "≤ 5"}, {"item": "Mg", "unit": "ppb", "spec": "≤ 5"}, {"item": "Ca", "unit": "ppb", "spec": "≤ 5"}, {"item": "Fe", "unit": "ppb", "spec": "≤ 10"}, {"item": "Cu", "unit": "ppb", "spec": "≤ 5"}, {"item": "Zn", "unit": "ppb", "spec": "≤ 5"}, {"item": "Al", "unit": "ppb", "spec": "≤ 5"}, {"item": "Ni", "unit": "ppb", "spec": "≤ 5"}, {"item": "Cr", "unit": "ppb", "spec": "≤ 5"}, {"item": "Pb", "unit": "ppb", "spec": "≤ 10"}, {"item": "Ti", "unit": "ppb", "spec": "≤ 10"}, {"item": "Mn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Sn", "unit": "ppb", "spec": "≤ 10"}, {"item": "Chloride", "unit": "ppb", "spec": "≤ 200"}, {"item": "Sulfate", "unit": "ppb", "spec": "≤ 100"}], "APNI-3": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Clear"}, {"item": "Specific Gravity", "unit": "-", "spec": "1.110 ± 0.05"}, {"item": "pH", "unit": "-", "spec": "< 1"}], "APCN-1": [{"item": "Specific Gravity", "unit": "-", "spec": "1.105"}, {"item": "Total Acid", "unit": "wt%", "spec": "12.07"}], "APTI-F1": [{"item": "외관 (Appearance)", "unit": "-", "spec": "Colorless"}, {"item": "비중 (Specific gravity)", "unit": "-", "spec": "1.04 ± 0.01"}]}
+;
+
+const PRODUCTS = ["GBE-I25D","ETCR-400","CR-7","CR-7S","CS-903","SKWC-GET15","DT-20","APAD-1","WSCR-1","WSCR-2","APMD-1","APAL-1","APCN-3","APGE-11(GS4000)","ZD-50","APDM-100","AP-DM64","APKD-025","APPD-01","APPS-200","JPS-34U","AP-PD38","AP-PD14","APKOH-45","APNS-500","AP-PD25","GME-N01","BTE-132A","TFMS","APND-10","AP-CY200","APCU-2","GME-C50","AP-KIT","AP-IPA","AP-ACETONE","APMC-17","APPC-1","GC-907","GC-906","DTH-2","APTH-10","APTI-H1-B","APTI-H1(C)","APTH-73","APPS-1","APNI-3","APCN-1","APTI-F1"];
+
+// ═══ SUPABASE 설정 ═══
+const SB_URL = 'https://yeufiksvvvnhpcsgcqck.supabase.co';
+const SB_KEY = 'sb_publishable_kGaRC6M1MMv66pNVWhJMjA_ZVWMnJZ0';
+
+async function sbFetch(path, method='GET', body=null){
+  const opts = {
+    method,
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': 'Bearer ' + SB_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method==='POST' ? 'return=representation' : ''
+    }
+  };
+  if(body) opts.body = JSON.stringify(body);
+  const res = await fetch(SB_URL + path, opts);
+  if(!res.ok){ const e=await res.text(); console.error('SB Error:',e); return null; }
+  const txt = await res.text();
+  return txt ? JSON.parse(txt) : [];
+}
+
+// Supabase에서 entries 불러오기
+async function loadEntries(){
+  showLoading(true);
+  const data = await sbFetch('/rest/v1/entries?select=*&order=created_at.desc');
+  if(data){
+    ENTRIES = data.map(r=>({
+      id: r.id, type: r.type, prod: r.prod, lot: r.lot,
+      reqDate: r.req_date, testDate: r.test_date,
+      vendor: r.vendor, analyst: r.analyst,
+      jdg: r.jdg, results: r.results, by: r.created_by
+    }));
+  }
+  showLoading(false);
+  renderDashboard();
+}
+
+// Supabase에 entry 저장
+async function saveEntryToSB(entry){
+  return await sbFetch('/rest/v1/entries', 'POST', {
+    id: entry.id, type: entry.type, prod: entry.prod, lot: entry.lot,
+    req_date: entry.reqDate, test_date: entry.testDate,
+    vendor: entry.vendor, analyst: entry.analyst,
+    jdg: entry.jdg, results: entry.results, created_by: entry.by
+  });
+}
+
+function showLoading(on){
+  let el = document.getElementById('loading-bar');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'loading-bar';
+    el.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:3px;background:linear-gradient(90deg,var(--accent2),var(--accent));z-index:9999;transition:opacity .3s';
+    document.body.appendChild(el);
+  }
+  el.style.opacity = on ? '1' : '0';
+}
+
+// ═══ USERS ═══
+const DEF_USERS = [
+  {id:'admin',name:'정진수',pw:'admin1234',role:'admin',perms:{iqc:true,pqc:true,oqc:true,settings:true}},
+  {id:'lee_qc',name:'이검사',pw:'lee1234',role:'input',perms:{iqc:true,pqc:false,oqc:false,settings:false}},
+  {id:'park_pq',name:'박공정',pw:'park1234',role:'input',perms:{iqc:false,pqc:true,oqc:false,settings:false}},
+  {id:'choi_oq',name:'최출하',pw:'choi1234',role:'input',perms:{iqc:false,pqc:false,oqc:true,settings:false}},
+  {id:'viewer',name:'조회자',pw:'view1234',role:'viewer',perms:{iqc:false,pqc:false,oqc:false,settings:false}},
+];
+const lsGet = (k,def) => { try { return JSON.parse(localStorage.getItem(k)) || def; } catch(e){ return def; } };
+const lsSet = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+
+let CU = null;
+let USERS = lsGet('spc_users', DEF_USERS);
+let ENTRIES = [];
+let dashCharts = {}, trendCharts = [], cpkChart = null;
+
+// ═══ LOGIN ═══
+function doLogin(){
+  const id = document.getElementById('lid').value.trim();
+  const pw = document.getElementById('lpw').value;
+  const u = USERS.find(u => u.id===id && u.pw===pw);
+  if(!u){ document.getElementById('lerr').textContent='아이디 또는 비밀번호가 올바르지 않습니다.'; return; }
+  CU = u;
+  document.getElementById('login-screen').style.display='none';
+  const app = document.getElementById('app');
+  app.style.display='flex';
+  app.style.flex='1';
+  app.style.overflow='hidden';
+  document.getElementById('uavatar').textContent = u.name[0];
+  document.getElementById('uname').textContent = u.name;
+  document.getElementById('urole').textContent = {admin:'관리자',input:'입력자',viewer:'조회'}[u.role]||u.role;
+  applyPerms(); initApp();
+}
+function doLogout(){
+  CU=null;
+  document.getElementById('lid').value='';
+  document.getElementById('lpw').value='';
+  document.getElementById('lerr').textContent='';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+}
+function applyPerms(){
+  const p = CU.perms;
+  ['iqc','pqc','oqc'].forEach(t => {
+    document.getElementById(`${t}-lock`).style.display = p[t]?'none':'flex';
+    document.getElementById(`${t}-wrap`).style.display = p[t]?'block':'none';
+  });
+  document.getElementById('set-lock').style.display = p.settings?'none':'flex';
+  document.getElementById('set-wrap').style.display = p.settings?'block':'none';
+}
+
+// ═══ INIT ═══
+function initApp(){
+  const today = new Date().toISOString().split('T')[0];
+  const monthAgo = new Date(Date.now()-30*864e5).toISOString().split('T')[0];
+
+  // Populate all product selects
+  ['iqc-prod','pqc-prod','oqc-prod','trend-prod','cpk-prod','spec-sel'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = PRODUCTS.map(p=>`<option value="${p}">${p}</option>`).join('');
+  });
+  ['iqc-hprod','pqc-hprod','oqc-hprod'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.innerHTML = '<option value="">전체</option>' + PRODUCTS.map(p=>`<option>${p}</option>`).join('');
+  });
+
+  // Set dates
+  ['iqc-req','iqc-date','pqc-req','pqc-date','oqc-req','oqc-date'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = today;
+  });
+  ['iqc-hfrom','pqc-hfrom','oqc-hfrom'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = monthAgo;
+  });
+  ['iqc-hto','pqc-hto','oqc-hto'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = today;
+  });
+
+  // Default analyst to current user
+  ['iqc-analyst','pqc-analyst','oqc-analyst'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.value = CU.name;
+  });
+
+  loadSpec('iqc'); loadSpec('pqc'); loadSpec('oqc');
+  loadEntries();
+  renderDashboard(); renderUserTable(); renderSpecEdit();
+  tick(); setInterval(tick,1000);
+}
+
+// ═══ NAV ═══
+const TITLES = {dashboard:'📊 대시보드',iqc:'📥 IQC 입력',pqc:'⚙️ PQC 입력',oqc:'📤 OQC 입력',trend:'📈 Trend 확인',cpk:'📊 제품별 Cpk',settings:'⚙ 설정'};
+function nav(key, el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+key).classList.add('active');
+  document.getElementById('ptitle').textContent = TITLES[key]||key;
+  if(key==='trend') onTrendFilter();
+  if(key==='cpk') renderCpk();
+  if(key==='settings'){ renderUserTable(); renderSpecEdit(); }
+}
+
+// ═══ TABS ═══
+function switchTab(el, type, panel){
+  const wrap = document.getElementById(type+'-wrap');
+  wrap.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  ['direct','history'].forEach(p => {
+    const div = document.getElementById(type+'-'+p);
+    if(div) div.style.display = p===panel?'block':'none';
+  });
+  if(panel==='history') loadHist(type.toUpperCase());
+}
+
+// ═══ SPEC TABLE ═══
+function loadSpec(type){
+  const prod = document.getElementById(type+'-prod').value;
+  const items = SPECS[prod] || [];
+  document.getElementById(type+'-spec').innerHTML = items.length
+    ? items.map((it,i) => `
+      <tr>
+        <td style="font-size:12px;white-space:nowrap">${it.item}</td>
+        <td style="color:var(--text3);font-size:11px;white-space:nowrap">${it.unit}</td>
+        <td style="color:var(--accent);font-family:var(--mono);font-size:11px;white-space:nowrap">${it.spec}</td>
+        <td><input class="td-input" id="${type}-v1-${i}" type="text" placeholder="-" oninput="calcAvg('${type}',${i})"></td>
+        <td><input class="td-input" id="${type}-v2-${i}" type="text" placeholder="-" oninput="calcAvg('${type}',${i})"></td>
+        <td><input class="td-input" id="${type}-v3-${i}" type="text" placeholder="-" oninput="calcAvg('${type}',${i})"></td>
+        <td id="${type}-avg-${i}" style="font-family:var(--mono);font-size:12px;color:var(--text3)">-</td>
+        <td id="${type}-jdg-${i}" style="font-size:12px">-</td>
+      </tr>`).join('')
+    : '<tr><td colspan="8" style="text-align:center;color:var(--text3);padding:20px">해당 제품의 Spec 데이터가 없습니다. 설정에서 추가해주세요.</td></tr>';
+}
+
+function calcAvg(type, i){
+  const vals = [1,2,3].map(n=>{
+    const v = document.getElementById(`${type}-v${n}-${i}`)?.value;
+    return v !== undefined && v !== '' ? parseFloat(v) : NaN;
+  }).filter(v=>!isNaN(v));
+  if(!vals.length) return;
+  const avg = vals.reduce((a,b)=>a+b,0)/vals.length;
+  const avgEl = document.getElementById(`${type}-avg-${i}`);
+  avgEl.textContent = avg.toFixed(4);
+  avgEl.style.color = 'var(--accent)';
+  // judge
+  const prod = document.getElementById(type+'-prod').value;
+  const spec = (SPECS[prod]||[])[i]?.spec || '';
+  const jdg = judgeVal(avg, spec);
+  const jEl = document.getElementById(`${type}-jdg-${i}`);
+  jEl.innerHTML = jdg==='PASS'?'<span class="pass">PASS</span>':jdg==='FAIL'?'<span class="fail">FAIL</span>':'<span style="color:var(--text3)">-</span>';
+}
+
+function judgeVal(val, spec){
+  if(isNaN(val) || !spec || spec==='-') return '-';
+  // Pass-type text specs
+  if(/pass|clear|liquid|colorless|transparent/i.test(spec)) return '-';
+  const rangeM = spec.match(/([0-9.]+)\s*[~～]\s*([0-9.]+)/);
+  if(rangeM) return val>=parseFloat(rangeM[1])&&val<=parseFloat(rangeM[2])?'PASS':'FAIL';
+  const pmM = spec.match(/([0-9.]+)\s*[±]\s*([0-9.]+)/);
+  if(pmM) return Math.abs(val-parseFloat(pmM[1]))<=parseFloat(pmM[2])?'PASS':'FAIL';
+  const ltM = spec.match(/[<＜≤]\s*([0-9.]+)/);
+  if(ltM) return val<=parseFloat(ltM[1])?'PASS':'FAIL';
+  const gtM = spec.match(/[>＞≥]\s*([0-9.]+)/);
+  if(gtM) return val>=parseFloat(gtM[1])?'PASS':'FAIL';
+  const maxM = spec.match(/[Mm]ax\.?\s*([0-9.]+)/);
+  if(maxM) return val<=parseFloat(maxM[1])?'PASS':'FAIL';
+  const minM = spec.match(/[Mm]in\.?\s*([0-9.]+)/);
+  if(minM) return val>=parseFloat(minM[1])?'PASS':'FAIL';
+  return '-';
+}
+
+// ═══ SAVE ═══
+async function saveEntry(type){
+  const t = type.toLowerCase();
+  const prod = document.getElementById(`${t}-prod`).value;
+  const lot = document.getElementById(`${t}-lot`).value || 'N/A';
+  const reqDate = document.getElementById(`${t}-req`).value;
+  const testDate = document.getElementById(`${t}-date`).value;
+  const vendor = document.getElementById(`${t}-vendor`).value || '-';
+  const analyst = document.getElementById(`${t}-analyst`).value || CU.name;
+  const items = SPECS[prod] || [];
+  const results = items.map((it,i) => {
+    const v1 = document.getElementById(`${t}-v1-${i}`)?.value || '';
+    const v2 = document.getElementById(`${t}-v2-${i}`)?.value || '';
+    const v3 = document.getElementById(`${t}-v3-${i}`)?.value || '';
+    const avg = document.getElementById(`${t}-avg-${i}`)?.textContent || '-';
+    const jdg = document.getElementById(`${t}-jdg-${i}`)?.textContent.trim() || '-';
+    return {item:it.item, unit:it.unit, spec:it.spec, v1, v2, v3, avg, jdg};
+  });
+  const overallJdg = results.some(r=>r.jdg==='FAIL') ? 'FAIL' :
+                     results.every(r=>r.jdg==='-'||r.jdg==='') ? '미판정' : 'PASS';
+  const entry = {
+    id:'QC-'+Date.now(), type, prod, lot,
+    reqDate, testDate, vendor, analyst,
+    results, jdg: overallJdg, by: CU.id
+  };
+
+  const btn = event.currentTarget;
+  const orig = btn.textContent;
+  btn.textContent='저장 중...'; btn.disabled=true;
+
+  const saved = await saveEntryToSB(entry);
+  if(saved){
+    ENTRIES.unshift(entry);
+    btn.textContent='✓ 저장 완료!'; btn.style.background='var(--green)';
+    setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; btn.disabled=false; },1600);
+    renderDashboard();
+  } else {
+    btn.textContent='❌ 저장 실패'; btn.style.background='var(--red)';
+    setTimeout(()=>{ btn.textContent=orig; btn.style.background=''; btn.disabled=false; },2000);
+    alert('저장 실패! 인터넷 연결을 확인해주세요.');
+  }
+}
+
+function resetForm(type){
+  loadSpec(type);
+  document.getElementById(type+'-lot').value='';
+}
+
+// ═══ DASHBOARD ═══
+function renderDashboard(){
+  const today = new Date().toISOString().split('T')[0];
+  const todayE = ENTRIES.filter(e=>e.testDate===today);
+  const pass = todayE.filter(e=>e.jdg==='PASS').length;
+  const fail = todayE.filter(e=>e.jdg==='FAIL').length;
+  document.getElementById('s-total').textContent = todayE.length;
+  document.getElementById('s-pass').textContent = pass;
+  document.getElementById('s-fail').textContent = fail;
+  document.getElementById('s-rate').textContent = todayE.length ? `합격률 ${((pass/todayE.length)*100).toFixed(1)}%` : '합격률 -';
+
+  // Table
+  const recent = [...ENTRIES].reverse().slice(0,10);
+  document.getElementById('db-table').innerHTML = recent.length ? recent.map(e=>`
+    <tr>
+      <td style="font-family:var(--mono);font-size:11px">${e.id.slice(-10)}</td>
+      <td style="font-weight:600">${e.prod}</td>
+      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td><span class="badge ${e.type==='IQC'?'badge-blue':e.type==='PQC'?'badge-yellow':'badge-green'}">${e.type}</span></td>
+      <td>${e.reqDate||'-'}</td>
+      <td>${e.analyst}</td>
+      <td><span class="dot ${e.jdg==='PASS'?'dot-g':e.jdg==='FAIL'?'dot-r':'dot-y'}"></span>
+          <span class="${e.jdg==='PASS'?'pass':e.jdg==='FAIL'?'fail':'warn'}">${e.jdg}</span></td>
+    </tr>`).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:20px">데이터가 없습니다. IQC/PQC/OQC 메뉴에서 입력해주세요.</td></tr>';
+
+  // Charts
+  const tc = {IQC:0,PQC:0,OQC:0};
+  ENTRIES.forEach(e=>{ if(tc[e.type]!==undefined) tc[e.type]++; });
+  if(dashCharts.type) dashCharts.type.destroy();
+  dashCharts.type = new Chart(document.getElementById('ch-type'),{
+    type:'doughnut',
+    data:{labels:['IQC','PQC','OQC'],datasets:[{data:[tc.IQC,tc.PQC,tc.OQC],
+      backgroundColor:['rgba(0,198,255,.7)','rgba(255,214,0,.7)','rgba(0,230,118,.7)'],
+      borderColor:'#162032',borderWidth:3}]},
+    options:{plugins:{legend:{position:'right',labels:{color:'#7a9cc0',font:{size:11},padding:10}}},
+      responsive:true,maintainAspectRatio:false,cutout:'60%'}
+  });
+  const days7 = Array.from({length:7},(_,i)=>new Date(Date.now()-(6-i)*864e5).toISOString().split('T')[0]);
+  if(dashCharts.week) dashCharts.week.destroy();
+  dashCharts.week = new Chart(document.getElementById('ch-week'),{
+    type:'bar',
+    data:{labels:days7.map(d=>d.slice(5)),datasets:[
+      {label:'PASS',data:days7.map(d=>ENTRIES.filter(e=>e.testDate===d&&e.jdg==='PASS').length),backgroundColor:'rgba(0,230,118,.7)',borderRadius:4},
+      {label:'FAIL',data:days7.map(d=>ENTRIES.filter(e=>e.testDate===d&&e.jdg==='FAIL').length),backgroundColor:'rgba(255,68,68,.7)',borderRadius:4}
+    ]},
+    options:{plugins:{legend:{labels:{color:'#7a9cc0',font:{size:11}}}},
+      scales:{x:{stacked:true,ticks:{color:'#4a6a8a'},grid:{color:'rgba(30,58,95,.4)'}},
+              y:{stacked:true,ticks:{color:'#4a6a8a'},grid:{color:'rgba(30,58,95,.4)'}}},
+      responsive:true,maintainAspectRatio:false}
+  });
+}
+
+// ═══ HISTORY ═══
+async function loadHist(type){
+  const t = type.toLowerCase();
+  const prod = document.getElementById(`${t}-hprod`).value;
+  const from = document.getElementById(`${t}-hfrom`).value;
+  const to   = document.getElementById(`${t}-hto`).value;
+  const vLabel = type==='IQC'?'공급업체':'출하업체';
+
+  // Supabase에서 직접 조회
+  let url = `/rest/v1/entries?select=*&type=eq.${type}&test_date=gte.${from}&test_date=lte.${to}&order=test_date.desc`;
+  if(prod) url += `&prod=eq.${encodeURIComponent(prod)}`;
+  showLoading(true);
+  const data = await sbFetch(url);
+  showLoading(false);
+
+  const filtered = data ? data.map(r=>({
+    id:r.id, type:r.type, prod:r.prod, lot:r.lot,
+    reqDate:r.req_date, testDate:r.test_date,
+    vendor:r.vendor, analyst:r.analyst, jdg:r.jdg, results:r.results
+  })) : [];
+
+  document.getElementById(`${t}-htable`).innerHTML = filtered.length ? filtered.map(e=>`
+    <tr>
+      <td style="font-family:var(--mono);font-size:11px">${e.id.slice(-10)}</td>
+      <td style="font-weight:600">${e.prod}</td>
+      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td>${e.reqDate||'-'}</td>
+      <td>${e.testDate||'-'}</td>
+      <td>${e.vendor||'-'}</td>
+      <td>${e.analyst||'-'}</td>
+      <td><span class="${e.jdg==='PASS'?'pass':e.jdg==='FAIL'?'fail':'warn'}">${e.jdg}</span></td>
+      <td><button class="btn btn-ghost btn-sm" onclick='showDetailData(${JSON.stringify(e).replace(/'/g,"&#39;")})'>상세</button></td>
+    </tr>`).join('') :
+    `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:20px">조회 결과 없음</td></tr>`;
+}
+
+function showDetailData(e){
+  document.getElementById('detail-title').textContent = `[${e.type}] ${e.prod} / ${e.lot} / ${e.testDate}`;
+  document.getElementById('detail-tbl').innerHTML = (e.results||[]).map(r=>`
+    <tr>
+      <td style="font-size:12px">${r.item}</td>
+      <td style="color:var(--text3);font-size:11px">${r.unit}</td>
+      <td style="color:var(--accent);font-size:11px;font-family:var(--mono)">${r.spec}</td>
+      <td>${r.v1||'-'}</td><td>${r.v2||'-'}</td><td>${r.v3||'-'}</td>
+      <td style="font-family:var(--mono)">${r.avg}</td>
+      <td><span class="${r.jdg==='PASS'?'pass':r.jdg==='FAIL'?'fail':''}">${r.jdg}</span></td>
+    </tr>`).join('');
+  showModal('modal-detail');
+}
+
+function showDetail(id){
+  const e = ENTRIES.find(x=>x.id===id);
+  if(e) showDetailData(e);
+}
+
+// ═══ TREND ═══
+let currentTrendTab = 'chart';
+
+function switchTrendTab(el, panel){
+  document.querySelectorAll('#page-trend .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentTrendTab = panel;
+  document.getElementById('trend-panel-chart').style.display = panel==='chart'?'block':'none';
+  document.getElementById('trend-panel-data').style.display  = panel==='data' ?'block':'none';
+  onTrendFilter();
+}
+
+function onTrendFilter(){
+  renderTrend();
+  renderTrendDataTable();
+}
+
+function getTrendFiltered(){
+  const prod   = document.getElementById('trend-prod').value;
+  const period = parseInt(document.getElementById('trend-period').value);
+  const typeF  = document.getElementById('trend-type').value;
+  const from   = period===9999 ? '0000-00-00' : new Date(Date.now()-period*864e5).toISOString().split('T')[0];
+  return {
+    prod, items: SPECS[prod]||[],
+    filtered: ENTRIES.filter(e=>
+      e.prod===prod && e.testDate>=from && (typeF==='ALL'||e.type===typeF)
+    ).sort((a,b)=>a.testDate.localeCompare(b.testDate))
+  };
+}
+
+function renderTrend(){
+  trendCharts.forEach(c=>c.destroy()); trendCharts=[];
+  const {prod, items, filtered} = getTrendFiltered();
+  const area = document.getElementById('trend-area');
+  if(items.length===0){
+    area.innerHTML='<div style="grid-column:span 2;text-align:center;color:var(--text3);padding:40px">이 제품의 Spec 항목이 없습니다.</div>';
+    return;
+  }
+  area.innerHTML = items.map((_,i)=>`
+    <div class="card" id="trend-card-${i}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div class="card-title" style="margin-bottom:0">${items[i].item} <span style="font-size:10px;color:var(--text3)">(${items[i].unit})</span></div>
+        <button class="btn btn-ghost btn-sm" onclick="downloadOneChart(${i},'${items[i].item.replace(/'/g,"\\'")}')">💾 PNG</button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-bottom:6px">Spec: <span style="color:var(--accent)">${items[i].spec}</span></div>
+      <div class="chart-wrap chart-tall"><canvas id="tc-${i}"></canvas></div>
+    </div>`).join('');
+
+  if(filtered.length < 2){
+    const days = Array.from({length:15},(_,i)=>new Date(Date.now()-(14-i)*864e5).toISOString().split('T')[0].slice(5));
+    items.forEach((it,i)=>{
+      const data = Array.from({length:15},()=>+(Math.random()*0.4+0.8).toFixed(3));
+      trendCharts.push(new Chart(document.getElementById(`tc-${i}`),{
+        type:'line',
+        data:{labels:days,datasets:[{label:it.item,data,borderColor:'#00c6ff',backgroundColor:'rgba(0,198,255,.08)',fill:true,tension:.3,pointRadius:3}]},
+        options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a6a8a',font:{size:9}},grid:{color:'rgba(30,58,95,.35)'}},y:{ticks:{color:'#4a6a8a',font:{size:9}},grid:{color:'rgba(30,58,95,.35)'}}},responsive:true,maintainAspectRatio:false}
+      }));
+    });
+    return;
+  }
+  const labels = filtered.map(e=>e.testDate.slice(5));
+  items.forEach((it,i)=>{
+    const data = filtered.map(e=>{
+      const r = e.results.find(r=>r.item===it.item);
+      return r ? parseFloat(r.avg) : null;
+    });
+    trendCharts.push(new Chart(document.getElementById(`tc-${i}`),{
+      type:'line',
+      data:{labels,datasets:[{label:it.item,data,borderColor:'#00c6ff',backgroundColor:'rgba(0,198,255,.08)',fill:true,tension:.3,pointRadius:3,spanGaps:true}]},
+      options:{plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#4a6a8a',font:{size:9}},grid:{color:'rgba(30,58,95,.35)'}},y:{ticks:{color:'#4a6a8a',font:{size:9}},grid:{color:'rgba(30,58,95,.35)'}}},responsive:true,maintainAspectRatio:false}
+    }));
+  });
+}
+
+// ── 데이터 테이블 ──
+function renderTrendDataTable(){
+  const {prod, items, filtered} = getTrendFiltered();
+  const head = document.getElementById('trend-data-head');
+  const body = document.getElementById('trend-data-body');
+  const countEl = document.getElementById('trend-data-count');
+
+  if(!filtered.length){
+    head.innerHTML='';
+    body.innerHTML='<tr><td colspan="20" style="text-align:center;color:var(--text3);padding:24px">조회된 데이터가 없습니다. 먼저 IQC/PQC/OQC 메뉴에서 데이터를 입력해주세요.</td></tr>';
+    countEl.textContent='';
+    return;
+  }
+
+  // 헤더: 고정컬럼 + 항목별 평균
+  head.innerHTML = `
+    <th>유형</th><th>의뢰번호</th><th>제품명</th><th>LOT</th>
+    <th>의뢰일</th><th>검사일</th><th>업체명</th><th>분석자</th><th>판정</th>
+    ${items.map(it=>`<th style="white-space:nowrap">${it.item}<br><span style="font-size:9px;color:var(--text3)">${it.unit}</span></th>`).join('')}`;
+
+  body.innerHTML = filtered.map(e=>`
+    <tr>
+      <td><span class="badge ${e.type==='IQC'?'badge-blue':e.type==='PQC'?'badge-yellow':'badge-green'}">${e.type}</span></td>
+      <td style="font-family:var(--mono);font-size:10px">${e.id.slice(-10)}</td>
+      <td style="font-weight:600">${e.prod}</td>
+      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td>${e.reqDate||'-'}</td>
+      <td>${e.testDate||'-'}</td>
+      <td>${e.vendor||'-'}</td>
+      <td>${e.analyst||'-'}</td>
+      <td><span class="${e.jdg==='PASS'?'pass':e.jdg==='FAIL'?'fail':'warn'}">${e.jdg}</span></td>
+      ${items.map(it=>{
+        const r = e.results.find(r=>r.item===it.item);
+        const avg = r?.avg||'-';
+        const jdg = r?.jdg||'-';
+        return `<td style="font-family:var(--mono);font-size:11px;text-align:center">
+          <span style="color:${jdg==='PASS'?'var(--green)':jdg==='FAIL'?'var(--red)':'var(--text2)'}">${avg}</span>
+        </td>`;
+      }).join('')}
+    </tr>`).join('');
+
+  countEl.textContent = `총 ${filtered.length}건`;
+}
+
+// ── 엑셀 다운로드 (CSV) ──
+function downloadTrendExcel(){
+  const {prod, items, filtered} = getTrendFiltered();
+  if(!filtered.length){ alert('조회된 데이터가 없습니다.'); return; }
+
+  const headers = ['유형','의뢰번호','제품명','LOT','의뢰일','검사일','업체명','분석자','판정',
+    ...items.map(it=>`${it.item}(${it.unit})`),
+    ...items.map(it=>`${it.item}_판정`)];
+
+  const rows = filtered.map(e=>[
+    e.type, e.id.slice(-10), e.prod, e.lot,
+    e.reqDate||'', e.testDate||'', e.vendor||'', e.analyst||'', e.jdg,
+    ...items.map(it=>{ const r=e.results.find(r=>r.item===it.item); return r?.avg||''; }),
+    ...items.map(it=>{ const r=e.results.find(r=>r.item===it.item); return r?.jdg||''; }),
+  ]);
+
+  const bom = '\uFEFF';
+  const csv = bom + [headers, ...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\r\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `SPC_${prod}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+}
+
+// ── 차트 1개 PNG 다운로드 ──
+function downloadOneChart(idx, name){
+  const canvas = document.getElementById(`tc-${idx}`);
+  if(!canvas){ alert('차트를 먼저 조회해주세요.'); return; }
+  // 흰 배경으로 합성
+  const tmp = document.createElement('canvas');
+  tmp.width=canvas.width; tmp.height=canvas.height;
+  const ctx=tmp.getContext('2d');
+  ctx.fillStyle='#162032'; ctx.fillRect(0,0,tmp.width,tmp.height);
+  ctx.drawImage(canvas,0,0);
+  const a=document.createElement('a');
+  a.href=tmp.toDataURL('image/png');
+  a.download=`Trend_${name}_${new Date().toISOString().slice(0,10)}.png`;
+  a.click();
+}
+
+// ── 전체 차트 ZIP 없이 순차 다운로드 ──
+function downloadTrendCharts(){
+  const prod = document.getElementById('trend-prod').value;
+  const items = SPECS[prod]||[];
+  if(!trendCharts.length){ alert('차트 탭에서 먼저 조회해주세요.'); return; }
+  items.forEach((it,i)=>{
+    setTimeout(()=>downloadOneChart(i, it.item.replace(/[\/\\:*?"<>|]/g,'_')), i*300);
+  });
+}
+
+// ═══ CPK ═══
+function renderCpk(){
+  const prod = document.getElementById('cpk-prod').value;
+  const period = parseInt(document.getElementById('cpk-period').value);
+  const from = new Date(Date.now()-period*864e5).toISOString().split('T')[0];
+  const items = SPECS[prod] || [];
+  const filtered = ENTRIES.filter(e=>e.prod===prod&&e.testDate>=from);
+  const cpkData = items.slice(0,8).map(it=>{
+    const vals = filtered.map(e=>{
+      const r = e.results.find(r=>r.item===it.item);
+      return r ? parseFloat(r.avg) : null;
+    }).filter(v=>v!==null&&!isNaN(v));
+    if(vals.length<3){
+      const cpk = +(0.7+Math.random()*0.9).toFixed(2);
+      return {item:it.item, cpk, cp:+(cpk+0.08).toFixed(2), n:vals.length, demo:true};
+    }
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    const std = Math.sqrt(vals.map(v=>(v-mean)**2).reduce((a,b)=>a+b,0)/(vals.length-1));
+    const spec = it.spec;
+    const rM=spec.match(/([0-9.]+)\s*[~～]\s*([0-9.]+)/);
+    const pM=spec.match(/([0-9.]+)\s*±\s*([0-9.]+)/);
+    let usl=null,lsl=null;
+    if(rM){lsl=parseFloat(rM[1]);usl=parseFloat(rM[2]);}
+    else if(pM){lsl=parseFloat(pM[1])-parseFloat(pM[2]);usl=parseFloat(pM[1])+parseFloat(pM[2]);}
+    if(usl&&lsl&&std>0){
+      const cpk=Math.min((usl-mean)/(3*std),(mean-lsl)/(3*std));
+      return {item:it.item,cpk:+cpk.toFixed(2),cp:+((usl-lsl)/(6*std)).toFixed(2),n:vals.length,demo:false};
+    }
+    return {item:it.item,cpk:null,cp:null,n:vals.length,demo:true};
+  });
+  document.getElementById('cpk-list').innerHTML = cpkData.map(d=>{
+    const cpk = d.cpk ?? +(0.7+Math.random()*0.9).toFixed(2);
+    const col = cpk>=1.33?'var(--green)':cpk>=1.0?'var(--yellow)':'var(--red)';
+    const bg = cpk>=1.33?'linear-gradient(90deg,#00c6ff,#00e676)':cpk>=1.0?'linear-gradient(90deg,#ffd600,#ff9100)':'linear-gradient(90deg,#ff4444,#ff9100)';
+    const lbl = cpk>=1.33?'우수':cpk>=1.0?'주의':'불량';
+    const w = Math.min((cpk/2)*100,100);
+    return `<div class="cpk-item">
+      <div class="cpk-header"><span class="cpk-name">${d.item}${d.demo?'<span style="font-size:9px;color:var(--text3);margin-left:4px">(데모)</span>':''}</span><span class="cpk-val" style="color:${col}">${cpk}</span></div>
+      <div class="cpk-bar-bg"><div class="cpk-bar" style="width:${w}%;background:${bg}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:10px;color:var(--text3)">
+        <span>Cp: ${d.cp??'-'}</span><span>N=${d.n}</span><span style="color:${col}">${lbl}</span>
+      </div></div>`;
+  }).join('');
+
+  if(cpkChart) cpkChart.destroy();
+  cpkChart = new Chart(document.getElementById('ch-cpk'),{
+    type:'bar',
+    data:{
+      labels:cpkData.map(d=>d.item.length>14?d.item.slice(0,13)+'…':d.item),
+      datasets:[{label:'Cpk',
+        data:cpkData.map(d=>d.cpk??(+(0.7+Math.random()*0.9).toFixed(2))),
+        backgroundColor:cpkData.map(d=>{const c=d.cpk??0.9;return c>=1.33?'rgba(0,230,118,.7)':c>=1.0?'rgba(255,214,0,.7)':'rgba(255,68,68,.7)';}),
+        borderRadius:5}]
+    },
+    options:{indexAxis:'y',plugins:{legend:{display:false}},
+      scales:{x:{min:0,max:2,ticks:{color:'#4a6a8a'},grid:{color:'rgba(30,58,95,.4)'}},
+              y:{ticks:{color:'#7a9cc0',font:{size:10}},grid:{color:'rgba(30,58,95,.3)'}}},
+      responsive:true,maintainAspectRatio:false}
+  });
+}
+
+// ═══ SETTINGS ═══
+function renderUserTable(){
+  const roleMap={admin:'관리자',input:'입력자',viewer:'조회'};
+  document.getElementById('user-tbl').innerHTML = USERS.map(u=>`
+    <tr>
+      <td style="font-family:var(--mono);font-size:11px">${u.id}</td>
+      <td>${u.name}</td>
+      <td><span class="badge ${u.role==='admin'?'badge-blue':u.role==='input'?'badge-green':'badge-gray'}">${roleMap[u.role]||u.role}</span></td>
+      <td class="${u.perms.iqc?'pass':''}">${u.perms.iqc?'✓':'-'}</td>
+      <td class="${u.perms.pqc?'pass':''}">${u.perms.pqc?'✓':'-'}</td>
+      <td class="${u.perms.oqc?'pass':''}">${u.perms.oqc?'✓':'-'}</td>
+      <td class="${u.perms.settings?'pass':''}">${u.perms.settings?'✓':'-'}</td>
+      <td>${u.id!=='admin'?`<button class="btn btn-danger btn-sm" onclick="delUser('${u.id}')">삭제</button>`:''}</td>
+    </tr>`).join('');
+}
+function addUser(){
+  const id=document.getElementById('nu-id').value.trim();
+  const name=document.getElementById('nu-name').value.trim();
+  const pw=document.getElementById('nu-pw').value;
+  const role=document.getElementById('nu-role').value;
+  if(!id||!name||!pw){alert('모든 항목을 입력해주세요.');return;}
+  if(USERS.find(u=>u.id===id)){alert('이미 존재하는 아이디입니다.');return;}
+  USERS.push({id,name,pw,role,perms:{
+    iqc:document.getElementById('p-iqc').checked,
+    pqc:document.getElementById('p-pqc').checked,
+    oqc:document.getElementById('p-oqc').checked,
+    settings:document.getElementById('p-set').checked
+  }});
+  lsSet('spc_users',USERS); renderUserTable(); closeModal('modal-user');
+}
+function delUser(id){
+  if(!confirm(`'${id}' 사용자를 삭제하시겠습니까?`)) return;
+  USERS=USERS.filter(u=>u.id!==id); lsSet('spc_users',USERS); renderUserTable();
+}
+function renderSpecEdit(){
+  const prod = document.getElementById('spec-sel').value;
+  const items = SPECS[prod] || [];
+  document.getElementById('spec-tbl').innerHTML = items.map((it,i)=>`
+    <tr>
+      <td style="font-size:12px">${it.item}</td>
+      <td style="color:var(--text3);font-size:11px">${it.unit}</td>
+      <td><input class="td-input wide" value="${it.spec}" id="sv-${i}"></td>
+      <td><button class="btn btn-ghost btn-sm" onclick="saveSpec('${prod}',${i})">저장</button></td>
+    </tr>`).join('');
+}
+function saveSpec(prod,i){
+  const val=document.getElementById(`sv-${i}`).value;
+  if(SPECS[prod]&&SPECS[prod][i]){
+    SPECS[prod][i].spec=val;
+    const btn=event.currentTarget; btn.textContent='✓'; btn.style.color='var(--green)';
+    setTimeout(()=>{btn.textContent='저장';btn.style.color='';},1200);
+  }
+}
+function addSpecItem(){
+  const prod=document.getElementById('spec-sel').value;
+  const item=document.getElementById('ns-item').value.trim();
+  const unit=document.getElementById('ns-unit').value.trim();
+  const spec=document.getElementById('ns-spec').value.trim();
+  if(!item){alert('항목명을 입력해주세요.');return;}
+  if(!SPECS[prod]) SPECS[prod]=[];
+  SPECS[prod].push({item,unit,spec});
+  renderSpecEdit(); closeModal('modal-spec');
+}
+
+// ═══ MODAL ═══
+function showModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('show');}));
+
+// ═══ CLOCK ═══
+function tick(){document.getElementById('clock').textContent=new Date().toLocaleString('ko-KR');}
+</script>
+</body>
+</html>
