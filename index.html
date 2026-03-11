@@ -146,6 +146,72 @@ tr:hover td{background:rgba(0,198,255,.02);}
 .settings-label{font-size:13px;}
 .settings-sub{font-size:11px;color:var(--text3);margin-top:2px;}
 #clock{font-size:11px;color:var(--text3);font-family:var(--mono);}
+
+/* ═══ MOBILE RESPONSIVE ═══ */
+#hamburger{display:none;background:none;border:none;color:var(--text);font-size:22px;cursor:pointer;padding:4px 8px;line-height:1;}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:200;}
+#sidebar-overlay.show{display:block;}
+#mobile-bottom-nav{display:none;}
+
+@media(max-width:768px){
+  /* 햄버거 버튼 표시 */
+  #hamburger{display:block;}
+
+  /* 사이드바 → 슬라이드 오버레이 */
+  #sidebar{
+    position:fixed;left:-240px;top:0;bottom:0;z-index:300;
+    width:240px;min-width:240px;
+    transition:left .25s ease;
+    box-shadow:4px 0 24px rgba(0,0,0,.4);
+  }
+  #sidebar.open{left:0;}
+
+  /* 앱 레이아웃 */
+  #app{flex-direction:column;}
+  #main{width:100%;}
+
+  /* 탑바 */
+  .topbar{padding:0 12px;height:48px;}
+  .topbar-title{font-size:13px;}
+
+  /* 컨텐츠 여백 줄이기 + 하단 탭바 공간 */
+  .content{padding:12px;padding-bottom:70px;}
+
+  /* 그리드 → 1열 */
+  .grid2{grid-template-columns:1fr;}
+  .grid4{grid-template-columns:repeat(2,1fr);}
+  .form-grid{grid-template-columns:repeat(2,1fr);}
+
+  /* 테이블 스크롤 */
+  .card{overflow-x:auto;padding:12px;}
+  table{min-width:500px;}
+
+  /* 모달 */
+  .modal{width:calc(100vw - 32px);max-height:80vh;}
+
+  /* stat 카드 글씨 */
+  .stat-value{font-size:20px;}
+
+  /* 하단 탭 네비게이션 */
+  #mobile-bottom-nav{
+    display:flex;
+    position:fixed;bottom:0;left:0;right:0;
+    background:var(--bg2);border-top:1px solid var(--border);
+    z-index:100;height:58px;
+    justify-content:space-around;align-items:center;
+  }
+  .mob-nav-item{
+    display:flex;flex-direction:column;align-items:center;
+    gap:2px;padding:6px 10px;cursor:pointer;
+    color:var(--text3);font-size:9px;font-weight:600;
+    border-radius:8px;transition:color .15s;flex:1;
+  }
+  .mob-nav-item.active{color:var(--accent);}
+  .mob-nav-icon{font-size:18px;line-height:1;}
+
+  /* 로그인 박스 */
+  .login-box{width:90%;padding:28px 20px;}
+}
 </style>
 </head>
 <body>
@@ -171,6 +237,7 @@ tr:hover td{background:rgba(0,198,255,.02);}
 
 <!-- APP -->
 <div id="app" style="display:none;flex:1;overflow:hidden;">
+  <div id="sidebar-overlay" onclick="closeSidebar()"></div>
   <div id="sidebar">
     <div class="logo">
       <div class="logo-title">⬡ SPC SYSTEM</div>
@@ -196,8 +263,17 @@ tr:hover td{background:rgba(0,198,255,.02);}
     </div>
   </div>
 
+  <!-- 모바일 하단 탭 -->
+  <div id="mobile-bottom-nav">
+    <div class="mob-nav-item active" onclick="nav('dashboard',this);mobNav(this)"><span class="mob-nav-icon">▦</span>대시보드</div>
+    <div class="mob-nav-item" onclick="nav('iqc',this);mobNav(this)"><span class="mob-nav-icon">📥</span>IQC</div>
+    <div class="mob-nav-item" onclick="nav('oqc',this);mobNav(this)"><span class="mob-nav-icon">📤</span>OQC</div>
+    <div class="mob-nav-item" onclick="nav('trend',this);mobNav(this)"><span class="mob-nav-icon">📈</span>Trend</div>
+    <div class="mob-nav-item" onclick="nav('cpk',this);mobNav(this)"><span class="mob-nav-icon">📊</span>CPK</div>
+  </div>
+
   <div id="main">
-    <div class="topbar">
+    <div class="topbar"><button id="hamburger" onclick="toggleSidebar()">☰</button>
       <div class="topbar-title" id="ptitle">📊 대시보드</div>
       <div class="topbar-right">
         <span class="badge badge-green">● 시스템 정상</span>
@@ -1241,6 +1317,24 @@ document.querySelectorAll('.modal-bg').forEach(bg=>bg.addEventListener('click',e
 
 // ═══ CLOCK ═══
 function tick(){document.getElementById('clock').textContent=new Date().toLocaleString('ko-KR');}
+
+// ═══ MOBILE NAV ═══
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('show');
+}
+function closeSidebar(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('show');
+}
+function mobNav(el){
+  document.querySelectorAll('.mob-nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  closeSidebar();
+}
+// 사이드바 nav 클릭시 모바일에선 닫기
+const _origNav = nav;
+
 </script>
 </body>
 </html>
