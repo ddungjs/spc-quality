@@ -487,6 +487,9 @@ tr:hover td{background:rgba(0,198,255,.02);}
 
         <!-- 차트 탭 -->
         <div id="trend-panel-chart">
+        <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+          <button class="btn btn-ghost" onclick="downloadTrendCharts()">🖼 차트 전체 PNG 다운로드</button>
+        </div>
           <div id="trend-area" class="grid2"></div>
         </div>
 
@@ -1042,7 +1045,11 @@ function getTrendFiltered(){
     prod, items: SPECS[prod]||[],
     filtered: ENTRIES.filter(e=>
       e.prod===prod && e.testDate>=from && (typeF==='ALL'||e.type===typeF)
-    ).sort((a,b)=>a.testDate.localeCompare(b.testDate))
+    ).sort((a,b)=>a.testDate.localeCompare(b.testDate)).map(e=>{
+      let res = e.results;
+      if(typeof res === 'string'){ try{ res = JSON.parse(res); }catch(ex){ res=[]; } }
+      return {...e, results: Array.isArray(res) ? res : []};
+    })
   };
 }
 
@@ -1137,7 +1144,8 @@ function renderTrendDataTable(){
 // ── 엑셀 다운로드 (CSV) ──
 function downloadTrendExcel(){
   const {prod, items, filtered} = getTrendFiltered();
-  if(!filtered.length){ alert('조회된 데이터가 없습니다.'); return; }
+  if(!prod){ alert('제품을 선택해주세요.'); return; }
+  if(!filtered.length){ alert('조회된 데이터가 없습니다.\n조회 버튼을 먼저 눌러주세요.'); return; }
 
   const headers = ['유형','의뢰번호','제품명','LOT','의뢰일','검사일','업체명','분석자','판정',
     ...items.map(it=>`${it.item}(${it.unit})`),
@@ -1146,8 +1154,8 @@ function downloadTrendExcel(){
   const rows = filtered.map(e=>[
     e.type, e.id.slice(-10), e.prod, e.lot,
     e.reqDate||'', e.testDate||'', e.vendor||'', e.analyst||'', e.jdg,
-    ...items.map(it=>{ const r=e.results.find(r=>r.item===it.item); return r?.avg||''; }),
-    ...items.map(it=>{ const r=e.results.find(r=>r.item===it.item); return r?.jdg||''; }),
+    ...items.map(it=>{ const r=(e.results||[]).find(r=>r.item===it.item); return r?.avg!==undefined?r.avg:''; }),
+    ...items.map(it=>{ const r=(e.results||[]).find(r=>r.item===it.item); return r?.jdg||''; }),
   ]);
 
   const bom = '\uFEFF';
@@ -1156,7 +1164,9 @@ function downloadTrendExcel(){
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = `SPC_${prod}_${new Date().toISOString().slice(0,10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(a.href); }, 1000);
 }
 
 // ── 차트 1개 PNG 다운로드 ──
@@ -1172,14 +1182,25 @@ function downloadOneChart(idx, name){
   const a=document.createElement('a');
   a.href=tmp.toDataURL('image/png');
   a.download=`Trend_${name}_${new Date().toISOString().slice(0,10)}.png`;
+  document.body.appendChild(a);
   a.click();
+  setTimeout(()=>document.body.removeChild(a), 1000);
 }
 
 // ── 전체 차트 ZIP 없이 순차 다운로드 ──
 function downloadTrendCharts(){
   const prod = document.getElementById('trend-prod').value;
   const items = SPECS[prod]||[];
-  if(!trendCharts.length){ alert('차트 탭에서 먼저 조회해주세요.'); return; }
+  // 차트탭이 아니면 자동으로 전환 후 다운로드
+  if(!trendCharts.length){
+    const chartTabEl = document.querySelector('#page-trend .tab');
+    if(chartTabEl){ switchTrendTab(chartTabEl,'chart'); }
+    setTimeout(()=>{
+      if(!trendCharts.length){ alert('먼저 조회 버튼을 눌러주세요.'); return; }
+      trendCharts.forEach((c,i)=>downloadOneChart(i,(items[i]?.item||i).toString().replace(/[\/\\:*?"<>|]/g,'_')));
+    }, 500);
+    return;
+  }
   items.forEach((it,i)=>{
     setTimeout(()=>downloadOneChart(i, it.item.replace(/[\/\\:*?"<>|]/g,'_')), i*300);
   });
