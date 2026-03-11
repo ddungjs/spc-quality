@@ -442,7 +442,7 @@ tr:hover td{background:rgba(0,198,255,.02);}
               <select class="form-input" id="cpk-prod" style="width:200px"></select></div>
             <div class="form-group"><label class="form-label">기간</label>
               <select class="form-input" id="cpk-period" style="width:120px">
-                <option value="30">최근 30일</option><option value="90">최근 90일</option></select></div>
+                <option value="99999">전체</option><option value="30">최근 30일</option><option value="90">최근 90일</option><option value="180">최근 180일</option><option value="365">최근 1년</option></select></div>
             <button class="btn btn-primary" onclick="renderCpk()">조회</button>
           </div>
         </div>
@@ -576,12 +576,16 @@ async function loadEntries(){
   showLoading(true);
   const data = await sbFetch('/rest/v1/entries?select=*&order=created_at.desc');
   if(data){
-    ENTRIES = data.map(r=>({
-      id: r.id, type: r.type, prod: r.prod, lot: r.lot,
-      reqDate: r.req_date, testDate: r.test_date,
-      vendor: r.vendor, analyst: r.analyst,
-      jdg: r.jdg, results: r.results, by: r.created_by
-    }));
+    ENTRIES = data.map(r=>{
+      let res = r.results;
+      if(typeof res === 'string'){ try{ res = JSON.parse(res); }catch(e){ res = []; } }
+      return {
+        id: r.id, type: r.type, prod: r.prod, lot: r.lot,
+        reqDate: r.req_date, testDate: r.test_date,
+        vendor: r.vendor, analyst: r.analyst,
+        jdg: r.jdg, results: res, by: r.created_by
+      };
+    });
   }
   showLoading(false);
   renderDashboard();
@@ -892,11 +896,15 @@ async function loadHist(type){
   const data = await sbFetch(url);
   showLoading(false);
 
-  const filtered = data ? data.map(r=>({
-    id:r.id, type:r.type, prod:r.prod, lot:r.lot,
-    reqDate:r.req_date, testDate:r.test_date,
-    vendor:r.vendor, analyst:r.analyst, jdg:r.jdg, results:r.results
-  })) : [];
+  const filtered = data ? data.map(r=>{
+    let res = r.results;
+    if(typeof res === 'string'){ try{ res = JSON.parse(res); }catch(e){ res = []; } }
+    return {
+      id:r.id, type:r.type, prod:r.prod, lot:r.lot,
+      reqDate:r.req_date, testDate:r.test_date,
+      vendor:r.vendor, analyst:r.analyst, jdg:r.jdg, results:res
+    };
+  }) : [];
 
   document.getElementById(`${t}-htable`).innerHTML = filtered.length ? filtered.map(e=>`
     <tr>
@@ -1105,9 +1113,9 @@ function downloadTrendCharts(){
 function renderCpk(){
   const prod = document.getElementById('cpk-prod').value;
   const period = parseInt(document.getElementById('cpk-period').value);
-  const from = new Date(Date.now()-period*864e5).toISOString().split('T')[0];
+  const from = period >= 99999 ? '0000-00-00' : new Date(Date.now()-period*864e5).toISOString().split('T')[0];
   const items = SPECS[prod] || [];
-  const filtered = ENTRIES.filter(e=>e.prod===prod&&e.testDate>=from);
+  const filtered = ENTRIES.filter(e=>e.prod===prod&&(period>=99999||e.testDate>=from));
   const cpkData = items.slice(0,8).map(it=>{
     const vals = filtered.map(e=>{
       const r = e.results.find(r=>r.item===it.item);
