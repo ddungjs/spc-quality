@@ -650,6 +650,24 @@ async function sbFetch(path, method='GET', body=null){
   return txt ? JSON.parse(txt) : [];
 }
 
+
+// 제품명 마스킹 (데모용)
+const DEMO_MODE = true;
+const _prodCache = {};
+let _prodCounter = 0;
+function maskProd(prod){
+  if(!DEMO_MODE) return prod;
+  if(!_prodCache[prod]){
+    _prodCounter++;
+    _prodCache[prod] = 'DEMO-' + String(_prodCounter).padStart(3,'0');
+  }
+  return _prodCache[prod];
+}
+function maskLot(lot){
+  if(!DEMO_MODE) return lot;
+  return lot.replace(/[A-Z]/g,'X').replace(/[0-9]/g,'*');
+}
+
 // Supabase에서 entries 불러오기
 async function loadEntries(){
   showLoading(true);
@@ -924,8 +942,8 @@ function renderDashboard(){
   document.getElementById('db-table').innerHTML = recent.length ? recent.map(e=>`
     <tr>
       <td style="font-family:var(--mono);font-size:11px">${e.id.slice(-10)}</td>
-      <td style="font-weight:600">${e.prod}</td>
-      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td style="font-weight:600">${maskProd(e.prod)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${maskLot(e.lot)}</td>
       <td><span class="badge ${e.type==='IQC'?'badge-blue':e.type==='PQC'?'badge-yellow':'badge-green'}">${e.type}</span></td>
       <td>${e.reqDate||'-'}</td>
       <td>${e.analyst}</td>
@@ -988,8 +1006,8 @@ async function loadHist(type){
   document.getElementById(`${t}-htable`).innerHTML = filtered.length ? filtered.map(e=>`
     <tr>
       <td style="font-family:var(--mono);font-size:11px">${e.id.slice(-10)}</td>
-      <td style="font-weight:600">${e.prod}</td>
-      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td style="font-weight:600">${maskProd(e.prod)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${maskLot(e.lot)}</td>
       <td>${e.reqDate||'-'}</td>
       <td>${e.testDate||'-'}</td>
       <td>${e.vendor||'-'}</td>
@@ -1001,7 +1019,7 @@ async function loadHist(type){
 }
 
 function showDetailData(e){
-  document.getElementById('detail-title').textContent = `[${e.type}] ${e.prod} / ${e.lot} / ${e.testDate}`;
+  document.getElementById('detail-title').textContent = `[${e.type}] ${maskProd(e.prod)} / ${maskLot(e.lot)} / ${e.testDate}`;
   document.getElementById('detail-tbl').innerHTML = (e.results||[]).map(r=>`
     <tr>
       <td style="font-size:12px">${r.item}</td>
@@ -1121,8 +1139,8 @@ function renderTrendDataTable(){
     <tr>
       <td><span class="badge ${e.type==='IQC'?'badge-blue':e.type==='PQC'?'badge-yellow':'badge-green'}">${e.type}</span></td>
       <td style="font-family:var(--mono);font-size:10px">${e.id.slice(-10)}</td>
-      <td style="font-weight:600">${e.prod}</td>
-      <td style="font-family:var(--mono);font-size:11px">${e.lot}</td>
+      <td style="font-weight:600">${maskProd(e.prod)}</td>
+      <td style="font-family:var(--mono);font-size:11px">${maskLot(e.lot)}</td>
       <td>${e.reqDate||'-'}</td>
       <td>${e.testDate||'-'}</td>
       <td>${e.vendor||'-'}</td>
